@@ -1,0 +1,46 @@
+package user
+
+import "time"
+
+type ValidationError struct{ msg string }
+
+func (e *ValidationError) Error() string { return e.msg }
+
+type RegisterRequestDTO struct {
+	Email    string
+	Password string
+}
+
+type LoginRequestDTO struct {
+	Email    string
+	Password string
+}
+
+type UserResponseDTO struct {
+	ID        int64
+	Email     string
+	AvatarURL string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type AuthResponseDTO struct {
+	Token string
+	User  UserResponseDTO
+}
+
+type CreateUserRecordDTO struct {
+	Email        string
+	PasswordHash string
+	AvatarURL    string
+}
+
+// AuthRecord carries the password hash alongside user fields for login verification.
+type AuthRecord struct {
+	ID           int64
+	Email        string
+	PasswordHash string
+	AvatarURL    string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
