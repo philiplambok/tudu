@@ -16,6 +16,7 @@ type mockTaskRepo struct {
 	updateFn   func(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskRecordDTO, error)
 	completeFn func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
 	deleteFn   func(ctx context.Context, userID int64, id int64) error
+	listActivitiesFn func(ctx context.Context, userID int64, taskID int64) ([]task.TaskActivityRecordDTO, error)
 }
 
 func (m *mockTaskRepo) Create(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskRecordDTO, error) {
@@ -35,6 +36,9 @@ func (m *mockTaskRepo) Complete(ctx context.Context, userID int64, id int64) (*t
 }
 func (m *mockTaskRepo) Delete(ctx context.Context, userID int64, id int64) error {
 	return m.deleteFn(ctx, userID, id)
+}
+func (m *mockTaskRepo) ListActivities(ctx context.Context, userID int64, taskID int64) ([]task.TaskActivityRecordDTO, error) {
+	return m.listActivitiesFn(ctx, userID, taskID)
 }
 
 func TestCreate_Success(t *testing.T) {
@@ -121,5 +125,50 @@ func TestUpdate_NoFields(t *testing.T) {
 	var ve *task.ValidationError
 	if !errors.As(err, &ve) {
 		t.Errorf("expected *task.ValidationError, got %T", err)
+	}
+}
+
+func TestListActivities_Success(t *testing.T) {
+	now := time.Now()
+	fieldName := "title"
+	oldValue := "Buy milk"
+	newValue := "Buy oat milk"
+
+	repo := &mockTaskRepo{
+		listActivitiesFn: func(_ context.Context, userID int64, taskID int64) ([]task.TaskActivityRecordDTO, error) {
+			if userID != 1 {
+				t.Fatalf("expected userID 1, got %d", userID)
+			}
+			if taskID != 5 {
+				t.Fatalf("expected taskID 5, got %d", taskID)
+			}
+			return []task.TaskActivityRecordDTO{
+				{
+					ID:        10,
+					TaskID:    taskID,
+					UserID:    userID,
+					Action:    task.ActivityActionUpdated,
+					FieldName: &fieldName,
+					OldValue:  &oldValue,
+					NewValue:  &newValue,
+					CreatedAt: now,
+				},
+			}, nil
+		},
+	}
+
+	svc := task.NewService(repo)
+	got, err := svc.ListActivities(context.Background(), 1, 5)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 activity, got %d", len(got))
+	}
+	if got[0].Action != task.ActivityActionUpdated {
+		t.Errorf("expected action updated, got %s", got[0].Action)
+	}
+	if got[0].FieldName == nil || *got[0].FieldName != "title" {
+		t.Fatalf("expected field_name title, got %v", got[0].FieldName)
 	}
 }

@@ -49,3 +49,25 @@ type TaskResponseDTO struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type TaskActivityRecordDTO struct {
+	ID        int64
+	TaskID    int64
+	UserID    int64
+	Action    string
+	FieldName *string
+	OldValue  *string
+	NewValue  *string
+	CreatedAt time.Time
+}
+
+type TaskActivityResponseDTO struct {
+	ID        int64
+	TaskID    int64
+	UserID    int64
+	Action    string
+	FieldName *string
+	OldValue  *string
+	NewValue  *string
+	CreatedAt time.Time
+}

@@ -9,6 +9,7 @@ type Service interface {
 	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error)
 	Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
 	Delete(ctx context.Context, userID int64, id int64) error
+	ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityResponseDTO, error)
 }
 
 type service struct {
@@ -78,6 +79,18 @@ func (s *service) Delete(ctx context.Context, userID int64, id int64) error {
 	return s.repo.Delete(ctx, userID, id)
 }
 
+func (s *service) ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityResponseDTO, error) {
+	recs, err := s.repo.ListActivities(ctx, userID, taskID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]TaskActivityResponseDTO, len(recs))
+	for i := range recs {
+		out[i] = *toActivityResponseDTO(&recs[i])
+	}
+	return out, nil
+}
+
 func toResponseDTO(r *TaskRecordDTO) *TaskResponseDTO {
 	return &TaskResponseDTO{
 		ID:          r.ID,
@@ -89,5 +102,18 @@ func toResponseDTO(r *TaskRecordDTO) *TaskResponseDTO {
 		CompletedAt: r.CompletedAt,
 		CreatedAt:   r.CreatedAt,
 		UpdatedAt:   r.UpdatedAt,
+	}
+}
+
+func toActivityResponseDTO(r *TaskActivityRecordDTO) *TaskActivityResponseDTO {
+	return &TaskActivityResponseDTO{
+		ID:        r.ID,
+		TaskID:    r.TaskID,
+		UserID:    r.UserID,
+		Action:    r.Action,
+		FieldName: r.FieldName,
+		OldValue:  r.OldValue,
+		NewValue:  r.NewValue,
+		CreatedAt: r.CreatedAt,
 	}
 }

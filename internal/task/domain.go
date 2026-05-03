@@ -5,6 +5,9 @@ import "errors"
 const (
 	StatusPending   = "pending"
 	StatusCompleted = "completed"
+
+	ActivityActionCreated = "created"
+	ActivityActionUpdated = "updated"
 )
 
 var ErrNotFound = errors.New("task not found")

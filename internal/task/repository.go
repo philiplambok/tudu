@@ -14,6 +14,7 @@ type Repository interface {
 	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskRecordDTO, error)
 	Complete(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
 	Delete(ctx context.Context, userID int64, id int64) error
+	ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityRecordDTO, error)
 }
 
 type repository struct {
@@ -144,5 +145,22 @@ func toTaskRecordDTO(m *datamodel.Task) *TaskRecordDTO {
 		CompletedAt: m.CompletedAt,
 		CreatedAt:   m.CreatedAt,
 		UpdatedAt:   m.UpdatedAt,
+	}
+}
+
+func (r *repository) ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityRecordDTO, error) {
+	panic("not implemented")
+}
+
+func toTaskActivityRecordDTO(m *datamodel.TaskActivity) *TaskActivityRecordDTO {
+	return &TaskActivityRecordDTO{
+		ID:        m.ID,
+		TaskID:    m.TaskID,
+		UserID:    m.UserID,
+		Action:    m.Action,
+		FieldName: m.FieldName,
+		OldValue:  m.OldValue,
+		NewValue:  m.NewValue,
+		CreatedAt: m.CreatedAt,
 	}
 }
