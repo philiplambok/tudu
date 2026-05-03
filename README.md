@@ -105,7 +105,7 @@ Development and runtime are containerized, so Docker is the only local applicati
 
 ## Project Structure
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for a bird's-eye map of the codebase and request flow.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a bird's-eye map of the codebase and request flow.
 
 ```
 ├── api/openapi.yml          # OpenAPI 3.0 spec (source of truth)
