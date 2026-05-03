@@ -145,4 +145,5 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a bird's-eye map of the codebase and 
 - Add testcontainers to test infrastructure-layer integrations such as database access and API calls.
 - Add end-to-end whitebox API tests that exercise HTTP routes through the application stack.
 - Add database seeding for local development and repeatable manual testing.
+- Find and implement a real-world use case where one domain module depends on another domain module, to simulate cross-domain coordination in this clean architecture experiment.
 - Add `dx/playbooks` with manual smoke-test guides: runnable curls, prerequisites, seeded data assumptions, and expected API/database results.
