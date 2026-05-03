@@ -2,13 +2,17 @@
 
 ## Goal
 
-Move task activity creation logic out of the repository layer into the domain layer. The repository becomes a dumb persistence layer that inserts pre-built records. The domain owns what activity rows to create and when.
+Move task activity creation logic out of the repository layer into the domain layer. The repository becomes a dumb persistence layer: it receives a fully-formed domain aggregate and persists it. The domain owns what activity rows to create and when.
 
 ## Motivation
 
 Currently `repository.Update` reads the task before and after applying changes, diffs the fields, and decides which activity rows to insert — all inside a single transaction. This means the repository contains business logic (which fields are audited, how they are compared, what constitutes a change). The domain layer (domain.go) holds only constants and validation.
 
-The refactor makes the domain aggregate responsible for that logic. The repository is left with a single job: persist whatever it is given.
+The refactor makes the domain aggregate responsible for that logic. Every mutation follows the same three-step pattern:
+
+1. **Repo read** — fetch existing data needed to build the aggregate.
+2. **Domain** — build or mutate the aggregate; it computes its own pending activities.
+3. **Repo write** — pass the aggregate to the repo; the repo generates datamodel structs and runs the SQL atomically.
 
 ---
 
@@ -16,7 +20,7 @@ The refactor makes the domain aggregate responsible for that logic. The reposito
 
 ### Structs — `internal/task/domain.go`
 
-Two domain structs are added alongside the existing constants and validation functions:
+Two domain structs alongside existing constants and validation:
 
 ```go
 type Task struct {
@@ -30,61 +34,67 @@ type Task struct {
     CreatedAt   time.Time
     UpdatedAt   time.Time
 
-    Activities []TaskActivity
+    Activities []TaskActivity  // pending activity rows to be flushed by the repo
 }
 
 type TaskActivity struct {
-    ID        int64
     TaskID    int64
     UserID    int64
     Action    string
     FieldName *string
     OldValue  *string
     NewValue  *string
-    CreatedAt time.Time
 }
 ```
 
-`Task.Activities` is a pending-activity list. It is populated by domain methods, then handed to the repository which flushes it. After persistence the field is not used again in that request.
+`Task.Activities` holds activity records that should be inserted alongside the task write. The repo flushes them atomically; after the write they are not used again in that request. `TaskActivity` has no `ID` or `CreatedAt` — the repo sets those at insert time.
 
 ### Domain methods — `internal/task/domain.go`
 
 ```go
-// NewCreatedTask builds a Task aggregate with a single "created" activity.
-func NewCreatedTask(rec TaskRecordDTO) Task
+// TaskFromRecord converts a flat TaskRecordDTO into a domain Task.
+func TaskFromRecord(rec TaskRecordDTO) Task
 
-// UpdatedActivities computes which activity rows result from a change
-// between this Task's state (before) and after.
-func (t Task) UpdatedActivities(after Task) []TaskActivity
+// NewTask builds a new (unsaved) Task aggregate from a CreateTaskRecordDTO,
+// with a single "created" activity pre-populated.
+func NewTask(rec CreateTaskRecordDTO) Task
+
+// ApplyUpdate returns a new Task with the requested fields changed and
+// the field-level "updated" activities populated for each changed field.
+func (t Task) ApplyUpdate(req UpdateRequestDTO) Task
 ```
 
-`UpdatedActivities` compares `title`, `description`, and `due_date` between `t` (before) and `after`, returning one `TaskActivity` per changed field with `Action = ActivityActionUpdated`. Fields are compared as formatted strings (RFC3339Nano for time, raw string otherwise) consistent with the current comparison logic.
+`ApplyUpdate` compares `title`, `description`, and `due_date` between the receiver (before) and the new values in `req`, returning one `TaskActivity` per changed field. Fields are compared as strings (RFC3339Nano for times, raw string for text). This logic currently lives in `repository.Update`; it moves here as a pure function.
 
-These are pure functions with no side effects and no dependencies — straightforward to unit-test.
+String/time formatting helpers (`stringPtr`, `timeValue`, `textValue`, `valuesEqual`) move from `repository.go` to `domain.go`.
 
 ---
 
 ## Repository Contract
 
-### New repository methods
+### Simplified interface
 
 ```go
-// CreateWithActivity persists a task row and its activity in one transaction.
-CreateWithActivity(ctx context.Context, rec CreateTaskRecordDTO, activity TaskActivityRecordDTO) (*TaskRecordDTO, error)
-
-// UpdateWithActivities locks the task row, applies the update, and inserts
-// the pre-computed activity rows — all in one transaction. Returns the
-// updated task record.
-UpdateWithActivities(ctx context.Context, userID int64, id int64, req UpdateRequestDTO, activities []TaskActivityRecordDTO) (*TaskRecordDTO, error)
+type Repository interface {
+    Create(ctx context.Context, task Task) (*TaskRecordDTO, error)
+    List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error)
+    Get(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
+    Update(ctx context.Context, userID int64, task Task) (*TaskRecordDTO, error)
+    Complete(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
+    Delete(ctx context.Context, userID int64, id int64) error
+    ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityRecordDTO, error)
+}
 ```
 
-The existing `Create` and `Update` methods are **removed** and replaced by the above. All other methods (`List`, `Get`, `Complete`, `Delete`, `ListActivities`) are unchanged.
+`Create` and `Update` now accept a domain `Task` aggregate instead of a flat DTO or inline update map. The repo is responsible for:
 
-`insertTaskActivity`, `stringPtr`, `timeValue`, `textValue`, `valuesEqual` are **removed** from repository.go. String/time formatting helpers move to domain.go where they are needed by `UpdatedActivities`.
+- Converting `Task` fields into `datamodel.Task` and running the INSERT/UPDATE.
+- Converting each `Task.Activities` entry into `datamodel.TaskActivity` rows and inserting them.
+- Wrapping both in a single transaction.
 
-### Why not a generic `CreateActivities` separate call?
+Everything else (`List`, `Get`, `Complete`, `Delete`, `ListActivities`) is unchanged.
 
-Separating activity writes from task writes would require the service to manage transactions across two repository calls. Keeping them in one atomic repository method preserves the existing audit guarantee: task mutation and audit record always land together or not at all.
+The helpers `insertTaskActivity`, `stringPtr`, `timeValue`, `textValue`, `valuesEqual` are **removed** from `repository.go` — they move to `domain.go`.
 
 ---
 
@@ -94,59 +104,39 @@ Separating activity writes from task writes would require the service to manage 
 
 ```
 1. validate request
-2. build CreateTaskRecordDTO
-3. build activity = TaskActivityRecordDTO{Action: ActivityActionCreated}
-4. repo.CreateWithActivity(ctx, rec, activity) → TaskRecordDTO
-5. return toResponseDTO
+2. task := domain.NewTask(CreateTaskRecordDTO{UserID, Title, Description, DueDate})
+   // task.Activities = [{Action: "created"}]
+3. saved, err := repo.Create(ctx, task)
+4. return toResponseDTO(saved)
 ```
 
-The domain produces the activity record before the repo call; repo persists both atomically. `NewCreatedTask` is a convenience constructor for producing the activity record in step 3.
+One repo call. The aggregate carries the activity; the repo inserts both atomically.
 
 ### `service.Update`
 
-The service cannot compute the final activity rows before the transaction, because the "after" state is only known once the update is applied. The solution is a callback pattern: the service supplies a pure function to the repo; the repo calls it with the real after-row inside the transaction, then inserts the results.
-
-The cleanest split is: the service computes activities inside a callback, then passes the callback to the repo which does the locked update + insert atomically:
-
 ```
 1. validate request
-2. before := repo.Get(ctx, userID, id)            → TaskRecordDTO
-3. beforeTask := domain.TaskFromRecord(before)
-4. after, err := repo.UpdateWithActivities(
-       ctx, userID, id, req,
-       func(after TaskRecordDTO) []TaskActivityRecordDTO {
-           afterTask := domain.TaskFromRecord(after)
-           activities := beforeTask.UpdatedActivities(afterTask)
-           return toActivityRecordDTOs(activities)
-       },
-   )
+2. rec, err := repo.Get(ctx, userID, id)     // read current state
+3. before := domain.TaskFromRecord(rec)
+4. after := before.ApplyUpdate(req)           // mutates fields + populates Activities
+   // after.Activities = [{Action: "updated", FieldName: "title", ...}, ...]
+5. saved, err := repo.Update(ctx, userID, after)
+6. return toResponseDTO(saved)
 ```
 
-This is the most correct form: the repo reads-with-lock, applies the update, gets the after state, calls the callback to compute activities with the real after values, then inserts them — all in one transaction. The callback is a pure function supplied by the service.
+Two repo calls (one read, one write), but a single atomic write. `repo.Update` locks the row, applies the update, and inserts `after.Activities` in one transaction.
 
-The `UpdateWithActivities` signature becomes:
-
-```go
-UpdateWithActivities(
-    ctx context.Context,
-    userID int64,
-    id int64,
-    req UpdateRequestDTO,
-    activityFn func(after TaskRecordDTO) []TaskActivityRecordDTO,
-) (*TaskRecordDTO, error)
-```
-
-This keeps the repository's transaction boundary intact while keeping activity-building logic in the domain/service side. The repository decides only *when* to call the callback (after the locked update has produced the after-row); the callback decides *what* activities should be created.
+The "before" read outside the transaction is acceptable because `repo.Update` internally does `SELECT … FOR UPDATE` before applying changes, guaranteeing that the row seen during activity insertion matches the row that was actually updated. The service-side `before` is used only to compute activities — the repo's locked read is the source of truth for the update.
 
 ---
 
 ## DTO changes
 
-`TaskActivityRecordDTO` stays as the service↔repo boundary type. Domain-side `TaskActivity` is a value type used only within the service call scope — it is not persisted directly, it is mapped to `TaskActivityRecordDTO` before being handed to the repo.
+`TaskRecordDTO` is unchanged — it remains the repo→service return type.
 
-A helper `toActivityRecordDTOs([]TaskActivity) []TaskActivityRecordDTO` lives in service.go.
+`TaskActivityRecordDTO` is no longer needed as a service↔repo input type. The repo accepts `TaskActivity` (domain) directly via the aggregate and converts it to `datamodel.TaskActivity` internally. `TaskActivityRecordDTO` is kept only as the repo→service return type for `ListActivities`.
 
-`TaskRecordDTO` gains a helper `domain.TaskFromRecord(rec TaskRecordDTO) Task` to convert a flat DTO into a domain Task for the purpose of running `UpdatedActivities`.
+`toActivityRecordDTOs` helper in `service.go` is removed (no longer needed).
 
 ---
 
@@ -154,21 +144,26 @@ A helper `toActivityRecordDTOs([]TaskActivity) []TaskActivityRecordDTO` lives in
 
 | File | Change |
 |------|--------|
-| `internal/task/domain.go` | Add `Task`, `TaskActivity` structs; add `NewCreatedTask`, `Task.UpdatedActivities`, `TaskFromRecord` methods; move string/time formatting helpers here |
-| `internal/task/repository.go` | Replace `Create`/`Update` with `CreateWithActivity`/`UpdateWithActivities(activityFn)`; remove helper functions now in domain |
-| `internal/task/service.go` | Update `Create` and `Update` to use new repo methods; add `toActivityRecordDTOs` helper |
-| `internal/task/service_test.go` | Update mock and existing tests to match new repo interface |
+| `internal/task/domain.go` | Add `Task`, `TaskActivity` structs; add `TaskFromRecord`, `NewTask`, `Task.ApplyUpdate`; move string/time helpers here; add `import "time"` |
+| `internal/task/repository.go` | Change `Create(rec) → Create(task Task)`; change `Update(userID, id, req) → Update(userID, task Task)`; repo converts domain→datamodel internally; remove helpers now in domain |
+| `internal/task/service.go` | Update `Create` and `Update` to use domain aggregate pattern; remove `toActivityRecordDTOs` |
+| `internal/task/service_test.go` | Update mock signatures and tests to match new `Create(Task)` / `Update(userID, Task)` interface |
+| `internal/task/domain_test.go` | New file: pure unit tests for `TaskFromRecord`, `NewTask`, `ApplyUpdate` |
 
 ---
 
 ## Testing
 
-Domain methods (`UpdatedActivities`, `NewCreatedTask`, `TaskFromRecord`) are pure functions — test them directly in `domain_test.go`:
+`domain_test.go` tests the pure domain functions:
 
-- `UpdatedActivities` with changed title, changed description, changed due_date, no changes, multiple changes
-- `NewCreatedTask` returns a Task with exactly one `ActivityActionCreated` activity
+- `NewTask` returns a Task with exactly one `ActivityActionCreated` activity and no ID.
+- `ApplyUpdate` with only title changed → one updated activity for title.
+- `ApplyUpdate` with title and description changed → two updated activities.
+- `ApplyUpdate` with no changes → zero activities.
+- `ApplyUpdate` with due_date changed → one updated activity for due_date.
+- `TaskFromRecord` round-trips a `TaskRecordDTO` correctly.
 
-Service tests (`service_test.go`) mock the repository interface (which changes signature). Existing service tests are updated to match the new `CreateWithActivity`/`UpdateWithActivities` signatures.
+`service_test.go` mock is updated for the new `Create(Task)` / `Update(userID, Task)` signatures. Existing service behaviour tests remain — only the mock interface changes.
 
 ---
 
