@@ -10,27 +10,27 @@ import (
 )
 
 type mockTaskRepo struct {
-	createFn   func(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskResponseDTO, error)
-	listFn     func(ctx context.Context, userID int64, status string) ([]task.TaskResponseDTO, error)
-	getFn      func(ctx context.Context, userID int64, id int64) (*task.TaskResponseDTO, error)
-	updateFn   func(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskResponseDTO, error)
-	completeFn func(ctx context.Context, userID int64, id int64) (*task.TaskResponseDTO, error)
+	createFn   func(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskRecordDTO, error)
+	listFn     func(ctx context.Context, userID int64, status string) ([]task.TaskRecordDTO, error)
+	getFn      func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
+	updateFn   func(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskRecordDTO, error)
+	completeFn func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
 	deleteFn   func(ctx context.Context, userID int64, id int64) error
 }
 
-func (m *mockTaskRepo) Create(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskResponseDTO, error) {
+func (m *mockTaskRepo) Create(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskRecordDTO, error) {
 	return m.createFn(ctx, rec)
 }
-func (m *mockTaskRepo) List(ctx context.Context, userID int64, status string) ([]task.TaskResponseDTO, error) {
+func (m *mockTaskRepo) List(ctx context.Context, userID int64, status string) ([]task.TaskRecordDTO, error) {
 	return m.listFn(ctx, userID, status)
 }
-func (m *mockTaskRepo) Get(ctx context.Context, userID int64, id int64) (*task.TaskResponseDTO, error) {
+func (m *mockTaskRepo) Get(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error) {
 	return m.getFn(ctx, userID, id)
 }
-func (m *mockTaskRepo) Update(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskResponseDTO, error) {
+func (m *mockTaskRepo) Update(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskRecordDTO, error) {
 	return m.updateFn(ctx, userID, id, req)
 }
-func (m *mockTaskRepo) Complete(ctx context.Context, userID int64, id int64) (*task.TaskResponseDTO, error) {
+func (m *mockTaskRepo) Complete(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error) {
 	return m.completeFn(ctx, userID, id)
 }
 func (m *mockTaskRepo) Delete(ctx context.Context, userID int64, id int64) error {
@@ -39,8 +39,8 @@ func (m *mockTaskRepo) Delete(ctx context.Context, userID int64, id int64) error
 
 func TestCreate_Success(t *testing.T) {
 	repo := &mockTaskRepo{
-		createFn: func(_ context.Context, rec task.CreateTaskRecordDTO) (*task.TaskResponseDTO, error) {
-			return &task.TaskResponseDTO{
+		createFn: func(_ context.Context, rec task.CreateTaskRecordDTO) (*task.TaskRecordDTO, error) {
+			return &task.TaskRecordDTO{
 				ID:     1,
 				UserID: rec.UserID,
 				Title:  rec.Title,
@@ -75,7 +75,7 @@ func TestCreate_EmptyTitle(t *testing.T) {
 
 func TestGet_NotFound(t *testing.T) {
 	repo := &mockTaskRepo{
-		getFn: func(_ context.Context, _ int64, _ int64) (*task.TaskResponseDTO, error) {
+		getFn: func(_ context.Context, _ int64, _ int64) (*task.TaskRecordDTO, error) {
 			return nil, task.ErrNotFound
 		},
 	}
@@ -89,8 +89,8 @@ func TestGet_NotFound(t *testing.T) {
 func TestComplete_Success(t *testing.T) {
 	now := time.Now()
 	repo := &mockTaskRepo{
-		completeFn: func(_ context.Context, userID int64, id int64) (*task.TaskResponseDTO, error) {
-			return &task.TaskResponseDTO{
+		completeFn: func(_ context.Context, userID int64, id int64) (*task.TaskRecordDTO, error) {
+			return &task.TaskRecordDTO{
 				ID:          id,
 				UserID:      userID,
 				Title:       "Exercise",

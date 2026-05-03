@@ -7,11 +7,11 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskResponseDTO, error)
-	List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error)
-	Get(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
-	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error)
-	Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
+	Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskRecordDTO, error)
+	List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error)
+	Get(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
+	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskRecordDTO, error)
+	Complete(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
 	Delete(ctx context.Context, userID int64, id int64) error
 }
 
@@ -23,8 +23,8 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskResponseDTO, error) {
-	var row TaskResponseDTO
+func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskRecordDTO, error) {
+	var row TaskRecordDTO
 	res := r.db.WithContext(ctx).Raw(`
 		INSERT INTO tasks (user_id, title, description, status, due_date, created_at, updated_at)
 		VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())
@@ -37,7 +37,7 @@ func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*Task
 	return &row, nil
 }
 
-func (r *repository) List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error) {
+func (r *repository) List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error) {
 	q := r.db.WithContext(ctx).
 		Select("id, user_id, title, description, status, due_date, completed_at, created_at, updated_at").
 		Table("tasks").
@@ -48,18 +48,18 @@ func (r *repository) List(ctx context.Context, userID int64, status string) ([]T
 		q = q.Where("status = ?", status)
 	}
 
-	var rows []TaskResponseDTO
+	var rows []TaskRecordDTO
 	if err := q.Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	if rows == nil {
-		rows = []TaskResponseDTO{}
+		rows = []TaskRecordDTO{}
 	}
 	return rows, nil
 }
 
-func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error) {
-	var row TaskResponseDTO
+func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error) {
+	var row TaskRecordDTO
 	res := r.db.WithContext(ctx).Raw(`
 		SELECT id, user_id, title, description, status, due_date, completed_at, created_at, updated_at
 		FROM tasks WHERE id = ? AND user_id = ?`, id, userID,
@@ -73,7 +73,7 @@ func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskResp
 	return &row, nil
 }
 
-func (r *repository) Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error) {
+func (r *repository) Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskRecordDTO, error) {
 	updates := map[string]any{"updated_at": gorm.Expr("NOW()")}
 	if req.Title != nil {
 		updates["title"] = *req.Title
@@ -98,7 +98,7 @@ func (r *repository) Update(ctx context.Context, userID int64, id int64, req Upd
 	return r.Get(ctx, userID, id)
 }
 
-func (r *repository) Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error) {
+func (r *repository) Complete(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error) {
 	res := r.db.WithContext(ctx).
 		Table("tasks").
 		Where("id = ? AND user_id = ?", id, userID).

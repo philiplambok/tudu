@@ -26,6 +26,18 @@ type UpdateRequestDTO struct {
 }
 
 
+type TaskRecordDTO struct {
+	ID          int64
+	UserID      int64
+	Title       string
+	Description string
+	Status      string
+	DueDate     *time.Time
+	CompletedAt *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
 type TaskResponseDTO struct {
 	ID          int64
 	UserID      int64
