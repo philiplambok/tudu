@@ -141,7 +141,7 @@ func TestTaskApplyUpdateDueDateChanged(t *testing.T) {
 	if after.DueDate != &newDueDate {
 		t.Fatalf("expected due date pointer to be updated")
 	}
-	assertActivity(t, after.Activities, "due_date", "2026-05-04T10:30:00.000000123Z", "2026-05-05T11:30:00.000000456Z")
+	assertActivity(t, after.Activities, "due_date", "2026-05-04", "2026-05-05")
 }
 
 func assertActivity(t *testing.T, activities []task.TaskActivity, fieldName string, oldValue string, newValue string) {

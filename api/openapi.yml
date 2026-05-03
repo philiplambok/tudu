@@ -298,14 +298,12 @@ components:
 
     User:
       type: object
-      required: [id, email, avatar_url, created_at, updated_at]
+      required: [id, email, created_at, updated_at]
       properties:
         id:
           type: integer
           format: int64
         email:
-          type: string
-        avatar_url:
           type: string
         created_at:
           type: string
@@ -314,12 +312,19 @@ components:
           type: string
           format: date-time
 
+    UserData:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
     UserResponse:
       type: object
       required: [data]
       properties:
         data:
-          $ref: "#/components/schemas/User"
+          $ref: "#/components/schemas/UserData"
 
     AuthResponse:
       type: object
@@ -328,7 +333,7 @@ components:
         token:
           type: string
         data:
-          $ref: "#/components/schemas/User"
+          $ref: "#/components/schemas/UserData"
 
     TaskStatus:
       type: string
@@ -353,7 +358,7 @@ components:
           $ref: "#/components/schemas/TaskStatus"
         due_date:
           type: string
-          format: date-time
+          format: date
           nullable: true
         completed_at:
           type: string
@@ -366,12 +371,19 @@ components:
           type: string
           format: date-time
 
+    TaskData:
+      type: object
+      required: [task]
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+
     TaskResponse:
       type: object
       required: [data]
       properties:
         data:
-          $ref: "#/components/schemas/Task"
+          $ref: "#/components/schemas/TaskData"
 
     PageInfo:
       type: object
@@ -442,14 +454,21 @@ components:
           type: string
           format: date-time
 
+    TaskActivityListData:
+      type: object
+      required: [activities]
+      properties:
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskActivity"
+
     TaskActivityListResponse:
       type: object
       required: [data]
       properties:
         data:
-          type: array
-          items:
-            $ref: "#/components/schemas/TaskActivity"
+          $ref: "#/components/schemas/TaskActivityListData"
 
     CreateTaskRequest:
       type: object
@@ -461,7 +480,7 @@ components:
           type: string
         due_date:
           type: string
-          format: date-time
+          format: date
           nullable: true
 
     UpdateTaskRequest:
@@ -473,5 +492,5 @@ components:
           type: string
         due_date:
           type: string
-          format: date-time
+          format: date
           nullable: true

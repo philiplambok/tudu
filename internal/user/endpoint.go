@@ -2,7 +2,6 @@ package user
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/philiplambok/tudu/pkg/avatar"
 	"gorm.io/gorm"
 )
 
@@ -10,9 +9,9 @@ type Endpoint struct {
 	handler *Handler
 }
 
-func NewEndpoint(db *gorm.DB, avatarProvider avatar.Provider, jwtSecret string) *Endpoint {
+func NewEndpoint(db *gorm.DB, jwtSecret string) *Endpoint {
 	repo := NewRepository(db)
-	svc := NewService(repo, avatarProvider, jwtSecret)
+	svc := NewService(repo, jwtSecret)
 	return &Endpoint{handler: NewHandler(svc)}
 }
 

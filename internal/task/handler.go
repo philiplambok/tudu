@@ -5,9 +5,11 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/oapi-codegen/runtime/types"
 	"github.com/philiplambok/tudu/internal"
 	"github.com/philiplambok/tudu/internal/common/util"
 	v1 "github.com/philiplambok/tudu/pkg/openapi/v1"
@@ -35,7 +37,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		req.Description = *body.Description
 	}
 	if body.DueDate != nil {
-		req.DueDate = body.DueDate
+		req.DueDate = dateOnly(body.DueDate.Time)
 	}
 
 	task, err := h.svc.Create(r.Context(), userID, req)
@@ -50,7 +52,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, v1.TaskResponse{Data: toV1Task(task)})
+	render.JSON(w, r, v1.TaskResponse{Data: v1.TaskData{Task: toV1Task(task)}})
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +101,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.TaskResponse{Data: toV1Task(task)})
+	render.JSON(w, r, v1.TaskResponse{Data: v1.TaskData{Task: toV1Task(task)}})
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +122,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	req := UpdateRequestDTO{
 		Title:       body.Title,
 		Description: body.Description,
-		DueDate:     body.DueDate,
+	}
+	if body.DueDate != nil {
+		req.DueDate = dateOnly(body.DueDate.Time)
 	}
 
 	task, err := h.svc.Update(r.Context(), userID, id, req)
@@ -139,7 +143,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.TaskResponse{Data: toV1Task(task)})
+	render.JSON(w, r, v1.TaskResponse{Data: v1.TaskData{Task: toV1Task(task)}})
 }
 
 func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +166,7 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.TaskResponse{Data: toV1Task(task)})
+	render.JSON(w, r, v1.TaskResponse{Data: v1.TaskData{Task: toV1Task(task)}})
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +215,9 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.TaskActivityListResponse{Data: data})
+	render.JSON(w, r, v1.TaskActivityListResponse{
+		Data: v1.TaskActivityListData{Activities: data},
+	})
 }
 
 func toV1Task(t *TaskResponseDTO) v1.Task {
@@ -223,10 +229,12 @@ func toV1Task(t *TaskResponseDTO) v1.Task {
 		CreatedAt:   t.CreatedAt,
 		UpdatedAt:   t.UpdatedAt,
 		CompletedAt: t.CompletedAt,
-		DueDate:     t.DueDate,
 	}
 	if t.Description != "" {
 		task.Description = &t.Description
+	}
+	if t.DueDate != nil {
+		task.DueDate = &types.Date{Time: dateOnlyValue(*t.DueDate)}
 	}
 	return task
 }
@@ -257,6 +265,15 @@ func toV1PageInfo(info util.PageInfo) v1.PageInfo {
 
 func parseID(r *http.Request) (int64, error) {
 	return strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+}
+
+func dateOnly(t time.Time) *time.Time {
+	v := dateOnlyValue(t)
+	return &v
+}
+
+func dateOnlyValue(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, status int, msg string) {

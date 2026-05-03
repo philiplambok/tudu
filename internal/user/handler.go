@@ -44,7 +44,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.JSON(w, r, v1.AuthResponse{Token: resp.Token, Data: toV1User(&resp.User)})
+	render.JSON(w, r, v1.AuthResponse{
+		Token: resp.Token,
+		Data:  v1.UserData{User: toV1User(&resp.User)},
+	})
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +76,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.AuthResponse{Token: resp.Token, Data: toV1User(&resp.User)})
+	render.JSON(w, r, v1.AuthResponse{
+		Token: resp.Token,
+		Data:  v1.UserData{User: toV1User(&resp.User)},
+	})
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
@@ -90,14 +96,13 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.UserResponse{Data: toV1User(u)})
+	render.JSON(w, r, v1.UserResponse{Data: v1.UserData{User: toV1User(u)}})
 }
 
 func toV1User(u *UserResponseDTO) v1.User {
 	return v1.User{
 		Id:        u.ID,
 		Email:     u.Email,
-		AvatarUrl: u.AvatarURL,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}

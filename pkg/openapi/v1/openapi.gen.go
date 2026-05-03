@@ -77,15 +77,15 @@ func (e ListTasksParamsStatus) Valid() bool {
 
 // AuthResponse defines model for AuthResponse.
 type AuthResponse struct {
-	Data  User   `json:"data"`
-	Token string `json:"token"`
+	Data  UserData `json:"data"`
+	Token string   `json:"token"`
 }
 
 // CreateTaskRequest defines model for CreateTaskRequest.
 type CreateTaskRequest struct {
-	Description *string    `json:"description,omitempty"`
-	DueDate     *time.Time `json:"due_date,omitempty"`
-	Title       string     `json:"title"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"due_date,omitempty"`
+	Title       string              `json:"title"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -117,15 +117,15 @@ type RegisterRequest struct {
 
 // Task defines model for Task.
 type Task struct {
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	Description *string    `json:"description,omitempty"`
-	DueDate     *time.Time `json:"due_date,omitempty"`
-	Id          int64      `json:"id"`
-	Status      TaskStatus `json:"status"`
-	Title       string     `json:"title"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	UserId      int64      `json:"user_id"`
+	CompletedAt *time.Time          `json:"completed_at,omitempty"`
+	CreatedAt   time.Time           `json:"created_at"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"due_date,omitempty"`
+	Id          int64               `json:"id"`
+	Status      TaskStatus          `json:"status"`
+	Title       string              `json:"title"`
+	UpdatedAt   time.Time           `json:"updated_at"`
+	UserId      int64               `json:"user_id"`
 }
 
 // TaskActivity defines model for TaskActivity.
@@ -143,9 +143,19 @@ type TaskActivity struct {
 // TaskActivityAction defines model for TaskActivityAction.
 type TaskActivityAction string
 
+// TaskActivityListData defines model for TaskActivityListData.
+type TaskActivityListData struct {
+	Activities []TaskActivity `json:"activities"`
+}
+
 // TaskActivityListResponse defines model for TaskActivityListResponse.
 type TaskActivityListResponse struct {
-	Data []TaskActivity `json:"data"`
+	Data TaskActivityListData `json:"data"`
+}
+
+// TaskData defines model for TaskData.
+type TaskData struct {
+	Task Task `json:"task"`
 }
 
 // TaskListData defines model for TaskListData.
@@ -161,7 +171,7 @@ type TaskListResponse struct {
 
 // TaskResponse defines model for TaskResponse.
 type TaskResponse struct {
-	Data Task `json:"data"`
+	Data TaskData `json:"data"`
 }
 
 // TaskStatus defines model for TaskStatus.
@@ -169,23 +179,27 @@ type TaskStatus string
 
 // UpdateTaskRequest defines model for UpdateTaskRequest.
 type UpdateTaskRequest struct {
-	Description *string    `json:"description,omitempty"`
-	DueDate     *time.Time `json:"due_date,omitempty"`
-	Title       *string    `json:"title,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"due_date,omitempty"`
+	Title       *string             `json:"title,omitempty"`
 }
 
 // User defines model for User.
 type User struct {
-	AvatarUrl string    `json:"avatar_url"`
 	CreatedAt time.Time `json:"created_at"`
 	Email     string    `json:"email"`
 	Id        int64     `json:"id"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// UserData defines model for UserData.
+type UserData struct {
+	User User `json:"user"`
+}
+
 // UserResponse defines model for UserResponse.
 type UserResponse struct {
-	Data User `json:"data"`
+	Data UserData `json:"data"`
 }
 
 // IDParam defines model for IDParam.
@@ -233,31 +247,32 @@ type UpdateTaskJSONRequestBody = UpdateTaskRequest
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"3Fnbbtu2G38Vgf//pVI5WTB0vsuStkiXdkWbrhdFYLDSZ5uNRKrkR6deYGAPsSfckww86GRJsZXY3rA7",
+	"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",
-	"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",
+	"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",
+	"nx3n2guH3epm9XcAAAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

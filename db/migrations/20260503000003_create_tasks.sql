@@ -5,7 +5,7 @@ CREATE TABLE tasks (
     title        TEXT         NOT NULL,
     description  TEXT,
     status       TEXT         NOT NULL DEFAULT 'pending',
-    due_date     TIMESTAMPTZ,
+    due_date     DATE,
     completed_at TIMESTAMPTZ,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()

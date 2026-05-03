@@ -15,7 +15,6 @@ type LoginRequestDTO struct {
 type UserResponseDTO struct {
 	ID        int64
 	Email     string
-	AvatarURL string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -28,7 +27,6 @@ type AuthResponseDTO struct {
 type CreateUserRecordDTO struct {
 	Email        string
 	PasswordHash string
-	AvatarURL    string
 }
 
 // AuthRecord carries the password hash alongside user fields for login verification.
@@ -36,7 +34,6 @@ type AuthRecord struct {
 	ID           int64
 	Email        string
 	PasswordHash string
-	AvatarURL    string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

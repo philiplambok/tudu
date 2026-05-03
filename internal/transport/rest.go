@@ -14,7 +14,6 @@ import (
 	"github.com/philiplambok/tudu/internal/swagger"
 	"github.com/philiplambok/tudu/internal/task"
 	"github.com/philiplambok/tudu/internal/user"
-	"github.com/philiplambok/tudu/pkg/avatar"
 	"gorm.io/gorm"
 )
 
@@ -23,13 +22,13 @@ type Server struct {
 	cfg internal.Config
 }
 
-func NewServer(cfg internal.Config, db *gorm.DB, avatarProvider avatar.Provider) *Server {
+func NewServer(cfg internal.Config, db *gorm.DB) *Server {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 
 	swagger.Register(r)
 
-	userEndpoint := user.NewEndpoint(db, avatarProvider, cfg.JWT.Secret)
+	userEndpoint := user.NewEndpoint(db, cfg.JWT.Secret)
 	r.Mount("/v1/auth", userEndpoint.AuthRoutes())
 
 	r.Group(func(r chi.Router) {

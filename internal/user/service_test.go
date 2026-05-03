@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/philiplambok/tudu/internal/user"
-	"github.com/philiplambok/tudu/pkg/avatar"
 )
 
 // mockRepo satisfies user.Repository without a database.
@@ -28,7 +27,7 @@ func (m *mockRepo) FindByID(ctx context.Context, id int64) (*user.UserResponseDT
 }
 
 func newTestService(repo user.Repository) user.Service {
-	return user.NewService(repo, avatar.NewMock(), "test-secret")
+	return user.NewService(repo, "test-secret")
 }
 
 func TestRegister_Success(t *testing.T) {
@@ -37,7 +36,6 @@ func TestRegister_Success(t *testing.T) {
 			return &user.UserResponseDTO{
 				ID:        1,
 				Email:     rec.Email,
-				AvatarURL: rec.AvatarURL,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			}, nil
@@ -93,14 +91,13 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 func TestLogin_Success(t *testing.T) {
 	repo := &mockRepo{
 		createFn: func(_ context.Context, rec user.CreateUserRecordDTO) (*user.UserResponseDTO, error) {
-			return &user.UserResponseDTO{ID: 1, Email: rec.Email, AvatarURL: rec.AvatarURL}, nil
+			return &user.UserResponseDTO{ID: 1, Email: rec.Email}, nil
 		},
 		findByEmailForAuthFn: func(_ context.Context, email string) (*user.AuthRecord, error) {
 			return &user.AuthRecord{
 				ID:           1,
 				Email:        email,
 				PasswordHash: "$2a$10$i4sb3JfXsPn/W98kI2qZYuWjbN0mSPiulNey4i4DXX0VJfwRxyVYq",
-				AvatarURL:    "https://example.com/avatar.png",
 			}, nil
 		},
 	}

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)",
+      "Bash(rtk grep *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk go *)",
+      "Bash(rtk git *)",
+      "Bash(git *)",
+      "Bash(rtk read *)",
+      "Bash(gofmt -w internal/task/dto.go internal/task/repository.go internal/task/service_test.go)",
+      "Bash(rtk proxy *)",
+      "Bash(go run *)",
+      "Bash(go tool *)",
+      "Bash(gofmt -w internal/task/handler.go internal/task/endpoint.go)",
+      "Bash(gofmt -l internal/common/datamodel/task_activity.go internal/task/domain.go internal/task/dto.go internal/task/repository.go internal/task/service.go internal/task/service_test.go internal/task/handler.go internal/task/endpoint.go)",
+      "Bash(docker compose *)",
+      "Bash(curl -s -X POST http://localhost:8080/v1/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"activity-smoke@example.com\",\"password\":\"password123\"}')",
+      "Bash(curl -s http://localhost:8080/v1/tasks/1/activities -H \"Authorization: Bearer test\")",
+      "Bash(curl -s http://localhost:8080/v1/tasks/1/activities -o /dev/null -w \"%{http_code}\")",
+      "Bash(rtk find *)",
+      "Bash(gofmt *)",
+      "Bash(./dx/test *)",
+      "Bash(rtk docker *)",
+      "Bash(./dx/db migrate *)"
+    ]
+  }
+}

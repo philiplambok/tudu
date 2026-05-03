@@ -136,7 +136,7 @@ func timeValue(t *time.Time) *string {
 	if t == nil {
 		return nil
 	}
-	return stringPtr(t.UTC().Format(time.RFC3339Nano))
+	return stringPtr(t.UTC().Format(time.DateOnly))
 }
 
 func textValue(v string) *string {

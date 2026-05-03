@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/philiplambok/tudu/pkg/avatar"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,13 +17,12 @@ type Service interface {
 }
 
 type service struct {
-	repo           Repository
-	avatarProvider avatar.Provider
-	jwtSecret      string
+	repo      Repository
+	jwtSecret string
 }
 
-func NewService(repo Repository, avatarProvider avatar.Provider, jwtSecret string) Service {
-	return &service{repo: repo, avatarProvider: avatarProvider, jwtSecret: jwtSecret}
+func NewService(repo Repository, jwtSecret string) Service {
+	return &service{repo: repo, jwtSecret: jwtSecret}
 }
 
 func (s *service) Register(ctx context.Context, req RegisterRequestDTO) (*AuthResponseDTO, error) {
@@ -37,12 +35,9 @@ func (s *service) Register(ctx context.Context, req RegisterRequestDTO) (*AuthRe
 		return nil, err
 	}
 
-	avatarURL := s.avatarProvider.GetAvatarURL(req.Email)
-
 	u, err := s.repo.Create(ctx, CreateUserRecordDTO{
 		Email:        req.Email,
 		PasswordHash: string(hash),
-		AvatarURL:    avatarURL,
 	})
 	if err != nil {
 		return nil, err
@@ -83,7 +78,6 @@ func (s *service) Login(ctx context.Context, req LoginRequestDTO) (*AuthResponse
 		User: UserResponseDTO{
 			ID:        rec.ID,
 			Email:     rec.Email,
-			AvatarURL: rec.AvatarURL,
 			CreatedAt: rec.CreatedAt,
 			UpdatedAt: rec.UpdatedAt,
 		},
