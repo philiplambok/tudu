@@ -2,10 +2,6 @@ package user
 
 import "time"
 
-type ValidationError struct{ msg string }
-
-func (e *ValidationError) Error() string { return e.msg }
-
 type RegisterRequestDTO struct {
 	Email    string
 	Password string
