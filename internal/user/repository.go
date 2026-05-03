@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/philiplambok/tudu/internal/common/datamodel"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
@@ -23,11 +24,11 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, rec CreateUserRecordDTO) (*UserResponseDTO, error) {
-	var row UserResponseDTO
+	var row datamodel.User
 	res := r.db.WithContext(ctx).Raw(`
 		INSERT INTO users (email, password_hash, avatar_url, created_at, updated_at)
 		VALUES (?, ?, ?, NOW(), NOW())
-		RETURNING id, email, avatar_url, created_at, updated_at`,
+		RETURNING id, email, password_hash, avatar_url, created_at, updated_at`,
 		rec.Email, rec.PasswordHash, rec.AvatarURL,
 	).Scan(&row)
 	if res.Error != nil {
@@ -37,11 +38,11 @@ func (r *repository) Create(ctx context.Context, rec CreateUserRecordDTO) (*User
 		}
 		return nil, res.Error
 	}
-	return &row, nil
+	return toUserResponseDTO(&row), nil
 }
 
 func (r *repository) FindByEmailForAuth(ctx context.Context, email string) (*AuthRecord, error) {
-	var row AuthRecord
+	var row datamodel.User
 	res := r.db.WithContext(ctx).Raw(`
 		SELECT id, email, password_hash, avatar_url, created_at, updated_at
 		FROM users WHERE email = ?`, email,
@@ -52,13 +53,13 @@ func (r *repository) FindByEmailForAuth(ctx context.Context, email string) (*Aut
 	if res.RowsAffected == 0 {
 		return nil, ErrNotFound
 	}
-	return &row, nil
+	return toAuthRecord(&row), nil
 }
 
 func (r *repository) FindByID(ctx context.Context, id int64) (*UserResponseDTO, error) {
-	var row UserResponseDTO
+	var row datamodel.User
 	res := r.db.WithContext(ctx).Raw(`
-		SELECT id, email, avatar_url, created_at, updated_at
+		SELECT id, email, password_hash, avatar_url, created_at, updated_at
 		FROM users WHERE id = ?`, id,
 	).Scan(&row)
 	if res.Error != nil {
@@ -67,5 +68,26 @@ func (r *repository) FindByID(ctx context.Context, id int64) (*UserResponseDTO, 
 	if res.RowsAffected == 0 {
 		return nil, ErrNotFound
 	}
-	return &row, nil
+	return toUserResponseDTO(&row), nil
+}
+
+func toUserResponseDTO(m *datamodel.User) *UserResponseDTO {
+	return &UserResponseDTO{
+		ID:        m.ID,
+		Email:     m.Email,
+		AvatarURL: m.AvatarURL,
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+	}
+}
+
+func toAuthRecord(m *datamodel.User) *AuthRecord {
+	return &AuthRecord{
+		ID:           m.ID,
+		Email:        m.Email,
+		PasswordHash: m.PasswordHash,
+		AvatarURL:    m.AvatarURL,
+		CreatedAt:    m.CreatedAt,
+		UpdatedAt:    m.UpdatedAt,
+	}
 }

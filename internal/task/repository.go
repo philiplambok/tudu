@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 
+	"github.com/philiplambok/tudu/internal/common/datamodel"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +25,7 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskRecordDTO, error) {
-	var row TaskRecordDTO
+	var row datamodel.Task
 	res := r.db.WithContext(ctx).Raw(`
 		INSERT INTO tasks (user_id, title, description, status, due_date, created_at, updated_at)
 		VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())
@@ -34,7 +35,7 @@ func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*Task
 	if res.Error != nil {
 		return nil, res.Error
 	}
-	return &row, nil
+	return toTaskRecordDTO(&row), nil
 }
 
 func (r *repository) List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error) {
@@ -48,18 +49,20 @@ func (r *repository) List(ctx context.Context, userID int64, status string) ([]T
 		q = q.Where("status = ?", status)
 	}
 
-	var rows []TaskRecordDTO
+	var rows []datamodel.Task
 	if err := q.Scan(&rows).Error; err != nil {
 		return nil, err
 	}
-	if rows == nil {
-		rows = []TaskRecordDTO{}
+
+	out := make([]TaskRecordDTO, len(rows))
+	for i := range rows {
+		out[i] = *toTaskRecordDTO(&rows[i])
 	}
-	return rows, nil
+	return out, nil
 }
 
 func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error) {
-	var row TaskRecordDTO
+	var row datamodel.Task
 	res := r.db.WithContext(ctx).Raw(`
 		SELECT id, user_id, title, description, status, due_date, completed_at, created_at, updated_at
 		FROM tasks WHERE id = ? AND user_id = ?`, id, userID,
@@ -70,7 +73,7 @@ func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskReco
 	if res.RowsAffected == 0 {
 		return nil, ErrNotFound
 	}
-	return &row, nil
+	return toTaskRecordDTO(&row), nil
 }
 
 func (r *repository) Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskRecordDTO, error) {
@@ -128,4 +131,18 @@ func (r *repository) Delete(ctx context.Context, userID int64, id int64) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+func toTaskRecordDTO(m *datamodel.Task) *TaskRecordDTO {
+	return &TaskRecordDTO{
+		ID:          m.ID,
+		UserID:      m.UserID,
+		Title:       m.Title,
+		Description: m.Description,
+		Status:      m.Status,
+		DueDate:     m.DueDate,
+		CompletedAt: m.CompletedAt,
+		CreatedAt:   m.CreatedAt,
+		UpdatedAt:   m.UpdatedAt,
+	}
 }
