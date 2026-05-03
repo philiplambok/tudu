@@ -4,6 +4,8 @@ import (
 	"log"
 	"log/slog"
 
+	"github.com/philiplambok/tudu/internal/transport"
+	"github.com/philiplambok/tudu/pkg/avatar"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -31,8 +33,12 @@ func runServer(_ *cobra.Command, _ []string) error {
 		log.Fatalf("db: %v", err)
 	}
 
-	// transport.NewServer wired in Task 14
-	_ = db
-	_ = cfg
-	return nil
+	var avatarProvider avatar.Provider
+	if cfg.Env == "production" {
+		avatarProvider = avatar.NewGravatar()
+	} else {
+		avatarProvider = avatar.NewMock()
+	}
+
+	return transport.NewServer(cfg, db, avatarProvider).Start()
 }
