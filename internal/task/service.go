@@ -24,12 +24,13 @@ func (s *service) Create(ctx context.Context, userID int64, req CreateRequestDTO
 	if err := ValidateCreate(req); err != nil {
 		return nil, err
 	}
-	rec, err := s.repo.Create(ctx, CreateTaskRecordDTO{
+	agg := NewTask(CreateTaskRecordDTO{
 		UserID:      userID,
 		Title:       req.Title,
 		Description: req.Description,
 		DueDate:     req.DueDate,
 	})
+	rec, err := s.repo.Create(ctx, agg)
 	if err != nil {
 		return nil, err
 	}
@@ -60,11 +61,16 @@ func (s *service) Update(ctx context.Context, userID int64, id int64, req Update
 	if err := ValidateUpdate(req); err != nil {
 		return nil, err
 	}
-	rec, err := s.repo.Update(ctx, userID, id, req)
+	rec, err := s.repo.Get(ctx, userID, id)
 	if err != nil {
 		return nil, err
 	}
-	return toResponseDTO(rec), nil
+	agg := TaskFromRecord(*rec).ApplyUpdate(req)
+	saved, err := s.repo.Update(ctx, userID, agg)
+	if err != nil {
+		return nil, err
+	}
+	return toResponseDTO(saved), nil
 }
 
 func (s *service) Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error) {
