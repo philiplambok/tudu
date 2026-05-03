@@ -90,6 +90,8 @@ Full API spec available at `/swagger.json` and `/swagger/` when the server is ru
 
 ## Development
 
+Development and runtime are containerized, so Docker is the only local application required to develop and run this project.
+
 ```bash
 ./dx/test ./...            # run tests
 ./dx/lint                  # go vet
@@ -108,9 +110,18 @@ Full API spec available at `/swagger.json` and `/swagger/` when the server is ru
 ├── cmd/                     # CLI commands: serve, migrate
 ├── db/migrations/           # SQL migration files (goose)
 ├── internal/
-│   ├── transport/           # chi router + JWT middleware
+│   ├── transport/           # chi router, REST wiring, and JWT middleware
 │   ├── user/                # Register, login, profile domain
 │   ├── task/                # Task CRUD + activity log domain
+│   │   ├── endpoint.go      # route registration and dependency wiring
+│   │   ├── handler.go       # HTTP/OpenAPI request and response mapping
+│   │   ├── service.go       # application flow and DTO conversion
+│   │   ├── domain.go        # task aggregate, rules, and activity generation
+│   │   ├── repository.go    # PostgreSQL/GORM persistence
+│   │   └── dto.go           # request, response, and record DTOs
+│   ├── common/
+│   │   ├── datamodel/       # database-representative structs for GORM scans
+│   │   └── util/            # shared utilities such as pagination
 │   ├── swagger/             # Swagger UI + spec endpoint
 │   └── config.go
 ├── pkg/
