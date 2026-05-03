@@ -43,7 +43,11 @@ func (s *service) Update(ctx context.Context, userID int64, id int64, req Update
 	if err := ValidateUpdate(req); err != nil {
 		return nil, err
 	}
-	return s.repo.Update(ctx, userID, id, req)
+	return s.repo.Update(ctx, userID, id, UpdateTaskRecordDTO{
+		Title:       req.Title,
+		Description: req.Description,
+		DueDate:     req.DueDate,
+	})
 }
 
 func (s *service) Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error) {

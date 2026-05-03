@@ -10,7 +10,7 @@ type Repository interface {
 	Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskResponseDTO, error)
 	List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error)
 	Get(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
-	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error)
+	Update(ctx context.Context, userID int64, id int64, rec UpdateTaskRecordDTO) (*TaskResponseDTO, error)
 	Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
 	Delete(ctx context.Context, userID int64, id int64) error
 }
@@ -73,16 +73,16 @@ func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskResp
 	return &row, nil
 }
 
-func (r *repository) Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error) {
+func (r *repository) Update(ctx context.Context, userID int64, id int64, rec UpdateTaskRecordDTO) (*TaskResponseDTO, error) {
 	updates := map[string]any{"updated_at": gorm.Expr("NOW()")}
-	if req.Title != nil {
-		updates["title"] = *req.Title
+	if rec.Title != nil {
+		updates["title"] = *rec.Title
 	}
-	if req.Description != nil {
-		updates["description"] = *req.Description
+	if rec.Description != nil {
+		updates["description"] = *rec.Description
 	}
-	if req.DueDate != nil {
-		updates["due_date"] = *req.DueDate
+	if rec.DueDate != nil {
+		updates["due_date"] = *rec.DueDate
 	}
 
 	res := r.db.WithContext(ctx).
