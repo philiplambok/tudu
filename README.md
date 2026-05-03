@@ -105,6 +105,8 @@ Development and runtime are containerized, so Docker is the only local applicati
 
 ## Project Structure
 
+See `ARCHITECTURE.md` for a bird's-eye map of the codebase and request flow.
+
 ```
 ├── api/openapi.yml          # OpenAPI 3.0 spec (source of truth)
 ├── cmd/                     # CLI commands: serve, migrate
@@ -141,5 +143,6 @@ Development and runtime are containerized, so Docker is the only local applicati
 - Add a mock notification service before implementing the real notification service integration.
 - Add worker scheduler to send reminders to the notification service.
 - Add testcontainers to test infrastructure-layer integrations such as database access and API calls.
+- Add end-to-end whitebox API tests that exercise HTTP routes through the application stack.
 - Add database seeding for local development and repeatable manual testing.
 - Add `dx/playbooks` with manual smoke-test guides: runnable curls, prerequisites, seeded data assumptions, and expected API/database results.
