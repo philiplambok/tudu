@@ -181,13 +181,13 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 	userID := internal.UserIDFromContext(r.Context())
 
-	taskID, err := parseID(r)
+	id, err := parseID(r)
 	if err != nil {
 		writeError(w, r, http.StatusBadRequest, "invalid task id")
 		return
 	}
 
-	activities, err := h.svc.ListActivities(r.Context(), userID, taskID)
+	activities, err := h.svc.ListActivities(r.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			writeError(w, r, http.StatusNotFound, err.Error())
