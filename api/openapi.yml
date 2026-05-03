@@ -172,6 +172,25 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /v1/tasks/{id}/activities:
+    parameters:
+      - $ref: "#/components/parameters/IDParam"
+    get:
+      tags: [Tasks]
+      summary: List task activity history
+      operationId: listTaskActivities
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskActivityListResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /v1/tasks/{id}/complete:
     parameters:
       - $ref: "#/components/parameters/IDParam"
@@ -349,6 +368,47 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Task"
+
+    TaskActivityAction:
+      type: string
+      enum: [created, updated]
+
+    TaskActivity:
+      type: object
+      required: [id, task_id, user_id, action, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+        task_id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        action:
+          $ref: "#/components/schemas/TaskActivityAction"
+        field_name:
+          type: string
+          nullable: true
+        old_value:
+          type: string
+          nullable: true
+        new_value:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    TaskActivityListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskActivity"
 
     CreateTaskRequest:
       type: object

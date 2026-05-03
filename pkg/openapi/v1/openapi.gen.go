@@ -21,6 +21,24 @@ const (
 	BearerAuthScopes bearerAuthContextKey = "bearerAuth.Scopes"
 )
 
+// Defines values for TaskActivityAction.
+const (
+	Created TaskActivityAction = "created"
+	Updated TaskActivityAction = "updated"
+)
+
+// Valid indicates whether the value is a known member of the TaskActivityAction enum.
+func (e TaskActivityAction) Valid() bool {
+	switch e {
+	case Created:
+		return true
+	case Updated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaskStatus.
 const (
 	TaskStatusCompleted TaskStatus = "completed"
@@ -100,6 +118,26 @@ type Task struct {
 	UserId      int64      `json:"user_id"`
 }
 
+// TaskActivity defines model for TaskActivity.
+type TaskActivity struct {
+	Action    TaskActivityAction `json:"action"`
+	CreatedAt time.Time          `json:"created_at"`
+	FieldName *string            `json:"field_name,omitempty"`
+	Id        int64              `json:"id"`
+	NewValue  *string            `json:"new_value,omitempty"`
+	OldValue  *string            `json:"old_value,omitempty"`
+	TaskId    int64              `json:"task_id"`
+	UserId    int64              `json:"user_id"`
+}
+
+// TaskActivityAction defines model for TaskActivityAction.
+type TaskActivityAction string
+
+// TaskActivityListResponse defines model for TaskActivityListResponse.
+type TaskActivityListResponse struct {
+	Data []TaskActivity `json:"data"`
+}
+
 // TaskListResponse defines model for TaskListResponse.
 type TaskListResponse struct {
 	Data []Task `json:"data"`
@@ -177,27 +215,29 @@ type UpdateTaskJSONRequestBody = UpdateTaskRequest
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"3FjdTuNGFH4Va9pLgwNFFfXdFnYRW5auIHQvUIQG+5DMYs+YmWNWKYrUh+gT9kmqM+OfOLY3CSRR1bvY",
-	"mTk/3/nOmW/8wiKVZkqCRMPCF5ZxzVNA0Pbp/PQzPdNPIVnIMo4T5jPJU2AhEzHzmYanXGiIWYg6B5+Z",
-	"aAIppx0PSqccaZ3En4+Yz3CagXuEMWg2m81ou8mUNGDdnSj5kIgI6XekJIK0P3mWJSLiKJQMvhol6V3t",
-	"5kcNDyxkPwR1IoH71wTvtVb6qnDhHMZgIi0yMsbC2uPMZ5cKP6hcxrvzfqnQe7AuZz67kTzHidLiT9hh",
-	"CA2vNopMqwiM4fcJvJcocLq7YP7giYitZQ9oLaMlxW4y/i7HSbWfyKpVBhqFY0/McWkIN4aI5zNUj2Aj",
-	"LzhpUAs5Zo6RJaFvi2W+Mz2qGKzuv4LjzIkGjjDk5vEKnnIw2BHWfIothz6Lc7iLOUKjZejFHooUqNvy",
-	"JKFqlB3WsoACE1ghGbusK4tmYVoZuFoste+Wddm/UGMhewGClIukkb1705Fpxo35pnS8QjCFiWpHV1xX",
-	"MBYGQW86tFTIC5BjnLDw2N9EoESwdnTE7wQQ4juOr2dPZCn8XRttzjY5vdTH2zku4pWOFJ8Z5JibZXOA",
-	"AL12K7/TQD7Ls3htcHID+m7FeBfIYE/Ucn8ZV5VTo1aN2Po4cyEMLh+YAiFdCTGLlfPDtebTVvy9c9JN",
-	"yLdMbud/HX/XFRNA5iktz0DGVCS/bp253XUFbyyy/92p3krXHmutGPkzR67vcp10hviaxq8G4usbdP2W",
-	"6mqScmzO5bheexBkm9ASqzGSBhNEuRY4vabtzss9cA2aVE399KEE5OOXISvUD1ly/9bgTBAzp6GEfFAt",
-	"SrKTBLjc4zqaCIQIcw3eUMVKGPTmFJz3z19/e2meoNijseN7H78M90gRgkRaAvF+NYdCNszj3Hv3+Zz5",
-	"7Bm0cY4O9gf7A0JUZSB5JljIfrKvfHtdsIkGzwcBWQ0SUgIWbuW6ikC3kZzHLHRCobhUgMFfVbw59dkQ",
-	"IbNm3agFFy8jh4PBxnw3hGuH8P39NwLwaHDQZ6iKLFgU7EeHh6tsaqt6y8k8TbmeziGPfGyIx5aUI1pT",
-	"1U4Xaqm/fKWe2lIFF+XaSkU82FkR3V3AFWXwy/KizN89N1TFEiGPexK+edTSvTVFbh4tRmPo6kRhcGhX",
-	"+I1vArfFl4CnHPS0/hRQKZQayvUO3dloi+3XkkI9LTg3pW2m8/P5dkQhzjUMTVIsECoRdoiN6DrQ2SD1",
-	"dXFLLdK+j+64SRpCb0mTvInzq9bJObSV6ijUfC8ELyKeuYOUWNqu3ql9X1WvgeBR+wS+VN5JAakdCUfL",
-	"s60+Qa2VoourL0W/u8HPALszGeyMC+WptzVgzgD7UVmYal3+6yVB+SWUHGQco0kb0frWsKXmbl9Ldixj",
-	"tlLQXQ0Ch97KgyAoT6vFr+JrcqX7HChs/+878BPXjxZyjxuvPv978SfFYoIUenXJGeAn2CZkjXvhJqX6",
-	"uoMryrUGiYsijuKzgFl7+rnkZDPKCxXxxDuFZ0hUlhIoPrPfAey9MQyChBZMlMHweHA8sFQtPLyUms6G",
-	"NvOrZ+d57oWr3Ww0+zcAAP//",
+	"3FnbbttGE34VYv//kg7l1ChS3qnOAUmdNEiU5iIQhDU5kjYmd+ndoQzVENCH6BP2SYrZ5VGkLMmW1KJ3",
+	"Ir2c0/fNaX3PIpVmSoJEw8J7lnHNU0DQ9unty4/0TD+FZCHLOM6ZzyRPgYVMxMxnGm5zoSFmIeocfGai",
+	"OaScvpgqnXKkcxJ/vGA+w2UG7hFmoNlqtaLPTaakAavuUslpIiKk35GSCNL+5FmWiIijUDL4bpSkd7Wa",
+	"/2uYspD9L6gdCdxfTfBKa6U/FSqcwhhMpEVGwlhYa1z57IPC1yqX8em0f1DoTa3Klc++SJ7jXGnxO5zQ",
+	"hJZWa0WmVQTG8OsEXkkUuDydMb/xRMRWsgd0ltGR4msSPsxxXn1PZNUqA43CsSfmuNWEL4aI5zNUN2At",
+	"LzhpUAs5Y46RJaG/Fcd8J3pcMVhdfwfHmUsNHGHEzc0nuM3BYI9ZTRc7Cn0W5zCJOUIrZejFGYoUKNvy",
+	"JCE0ygzrSECBCezgjD3W50UbmI4HDout8t2xPvlXaibkxgBBykXS8t696fE048bcKR3vYEwhovqiz65P",
+	"MBMGQR/atFTIK5AznLPwhX8IQ4lgXeuI3wkgxBOOj2dPZCn8oIwuZ9uc3qrj6RwX8U4txWcGOeZmWx2g",
+	"gH52Jx9IIJ/lWbx3cHIDerKjvWtksB21/L60q/KphVXLtk2cGUYoFkUJb3OHRyV428JUyhi6Lx7JmKmA",
+	"JJ64weH+gHBLuJsseJLvJlYl8R6nkZubyc6WPBX2UluTAAVKrZBvw3pYIQsyT0l88XFNmYaM2tumjCth",
+	"cHujFQip2YdCNqhOL9eaLzuB2NhnScqBjXqaMU8bQ5z+ffR9rspaiWoGMibo/LoP9OL6xWL+7x1ROu7a",
+	"Ga1bsBYcuZ7kOuk18TE1qerujy8/+/eHvtQvZ4CGj/vVegrZIQbj3RhJXRaiXAtcfqbPnZZr4Bo0jej1",
+	"0+syIO++jlgxypMk99c6OHPEzC0EQk5Vh5LsMgEuz7iO5gIhwlyDN1KxEga9xjri/fXHn16aJyjOqIT6",
+	"3ruvozNab0AiHYH4WdVUQzbK49wbfnzLfLYAbZyi82eDZwPbKTKQPBMsZD/YV77dfa2jweI8IKlBQmOt",
+	"DbdyWUVBt5a8jVnopt5iQwaDP6v4cKtUa6JetXGjFFzfrJ8PBgfT3drCera4X3+hAF4MzjcJqiwL1rfP",
+	"i+fPd/mou6JaTuZpyvWyEXnkM0M8tqQc05kKO12M/pvhK5eDIyG4vnvsBOL5yUC8LGYGi+RP20FpXqQc",
+	"CMUyQh73JNx5lNIbMaXhycZoBn2ZKAyO7Am/dcH1rbjWus1BL+t7rWrcrkO5X9NdjY+Yfp1RaEMKNqq0",
+	"9bRZn7+NycRGwlAlxSJCZYRdxMa02/YmSH33caQU6V6unDhJWoPeliR5Eud3xckptEj1ANXMheBexCvX",
+	"SImlXfRe2vcVeq0IXnQ78AflXRYhtSXhYru31X3qXi46uza56Pcn+BvAfk8GJ+NC2fWOFpg3gJujslbV",
+	"+vTXR4LyWp8UZByjeTei9dZwpOTuriUnHmOOAuipCoGL3s6FIOBuAy8Wggeb5LA+euTo9942/BOpVbU/",
+	"r4jT0psLg8oOBYdLti4s5RCx/p+3PVO4vz0Xsv/zhfE91zcFesarx7KNaUGDpAncReSmbvIejhmy1rp+",
+	"yA1q334S5VqDxPXZmuyzAbPy9KLkZNvKKxXxxHsJC0hUllJQfGavZ+w6HwZBQgfmymD4YvBiYKlaaLgv",
+	"R21r2sqvnp3mxguH3Wq8+jsAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
