@@ -2,6 +2,7 @@ package datamodel
 
 import "time"
 
+// TaskActivity represents a row in the task_activities table.
 type TaskActivity struct {
 	ID        int64
 	TaskID    int64
