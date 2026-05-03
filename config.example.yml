@@ -1,0 +1,15 @@
+# Config values can be overridden with environment variables using the ENV_ prefix.
+# Examples:
+#   http_server.port  → ENV_HTTP_SERVER_PORT
+#   database.source   → ENV_DATABASE_SOURCE
+#   jwt.secret        → ENV_JWT_SECRET
+
+env: local
+log:
+  level: INFO
+http_server:
+  port: "8080"
+database:
+  source: ""
+jwt:
+  secret: ""
