@@ -1,6 +1,6 @@
 # tudu
 
-A multi-user task management REST API built in Go with clean architecture. Users register, authenticate via JWT, and manage personal tasks with full activity history tracking.
+Dockerized Go REST API for multi-user task management, built to experiment with clean architecture in Go. Users register, authenticate via JWT, and manage personal tasks with full activity history tracking.
 
 ## Tech Stack
 

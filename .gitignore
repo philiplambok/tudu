@@ -1,3 +1,5 @@
 config.yml
 tmp/
 *.env
+.claude/worktrees/
+.claude/settings.local.json
