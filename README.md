@@ -125,7 +125,6 @@ Development and runtime are containerized, so Docker is the only local applicati
 │   ├── swagger/             # Swagger UI + spec endpoint
 │   └── config.go
 ├── pkg/
-│   ├── avatar/              # Avatar provider (Gravatar)
 │   └── openapi/v1/          # Generated types from OpenAPI spec
 └── dx/                      # Docker-based developer scripts
 ```
@@ -139,5 +138,8 @@ Development and runtime are containerized, so Docker is the only local applicati
 
 ## Action Items
 
+- Add a mock notification service before implementing the real notification service integration.
 - Add worker scheduler to send reminders to the notification service.
 - Add testcontainers to test infrastructure-layer integrations such as database access and API calls.
+- Add database seeding for local development and repeatable manual testing.
+- Add `dx/playbooks` with manual smoke-test guides: runnable curls, prerequisites, seeded data assumptions, and expected API/database results.
