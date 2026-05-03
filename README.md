@@ -14,7 +14,7 @@ Dockerized Go REST API for multi-user task management, built to experiment with 
 
 ## Getting Started
 
-Everything runs inside Docker — no local Go installation required.
+Everything runs inside Docker — no local Go installation required to run the project. Installing Go locally is recommended for editor/LSP support; see [mise Go installation](https://mise.jdx.dev/lang/go.html).
 
 ```bash
 # 1. Build the dev image (first time)
