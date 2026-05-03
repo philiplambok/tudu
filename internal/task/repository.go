@@ -198,7 +198,33 @@ func (r *repository) Delete(ctx context.Context, userID int64, id int64) error {
 }
 
 func (r *repository) ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityRecordDTO, error) {
-	panic("not implemented")
+	var taskRow datamodel.Task
+	taskRes := r.db.WithContext(ctx).Raw(`
+		SELECT id, user_id, title, description, status, due_date, completed_at, created_at, updated_at
+		FROM tasks WHERE id = ? AND user_id = ?`, taskID, userID,
+	).Scan(&taskRow)
+	if taskRes.Error != nil {
+		return nil, taskRes.Error
+	}
+	if taskRes.RowsAffected == 0 {
+		return nil, ErrNotFound
+	}
+
+	var rows []datamodel.TaskActivity
+	if err := r.db.WithContext(ctx).
+		Select("id, task_id, user_id, action, field_name, old_value, new_value, created_at").
+		Table("task_activities").
+		Where("task_id = ? AND user_id = ?", taskID, userID).
+		Order("created_at DESC, id DESC").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	out := make([]TaskActivityRecordDTO, len(rows))
+	for i := range rows {
+		out[i] = *toTaskActivityRecordDTO(&rows[i])
+	}
+	return out, nil
 }
 
 func toTaskRecordDTO(m *datamodel.Task) *TaskRecordDTO {
