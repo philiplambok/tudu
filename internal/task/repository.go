@@ -96,7 +96,7 @@ func (r *repository) Update(ctx context.Context, userID int64, id int64, req Upd
 		var before datamodel.Task
 		getBefore := tx.Raw(`
 			SELECT id, user_id, title, description, status, due_date, completed_at, created_at, updated_at
-			FROM tasks WHERE id = ? AND user_id = ?`, id, userID,
+			FROM tasks WHERE id = ? AND user_id = ? FOR UPDATE`, id, userID,
 		).Scan(&before)
 		if getBefore.Error != nil {
 			return getBefore.Error
@@ -270,7 +270,7 @@ func timeValue(t *time.Time) *string {
 	if t == nil {
 		return nil
 	}
-	return stringPtr(t.UTC().Format(time.RFC3339))
+	return stringPtr(t.UTC().Format(time.RFC3339Nano))
 }
 
 func textValue(v string) *string {
