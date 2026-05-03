@@ -111,6 +111,19 @@ paths:
           schema:
             type: string
             enum: [pending, completed]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
         "200":
           description: OK
@@ -360,14 +373,42 @@ components:
         data:
           $ref: "#/components/schemas/Task"
 
+    PageInfo:
+      type: object
+      required: [count, current_page, total_data, total_page]
+      properties:
+        count:
+          type: integer
+        current_page:
+          type: integer
+        next_page:
+          type: integer
+          nullable: true
+        previous_page:
+          type: integer
+          nullable: true
+        total_data:
+          type: integer
+        total_page:
+          type: integer
+
+    TaskListData:
+      type: object
+      required: [tasks, page_info]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        page_info:
+          $ref: "#/components/schemas/PageInfo"
+
     TaskListResponse:
       type: object
       required: [data]
       properties:
         data:
-          type: array
-          items:
-            $ref: "#/components/schemas/Task"
+          $ref: "#/components/schemas/TaskListData"
 
     TaskActivityAction:
       type: string

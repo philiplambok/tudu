@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/philiplambok/tudu/internal/common/util"
 	"github.com/philiplambok/tudu/internal/task"
 )
 
 type mockTaskRepo struct {
 	createFn         func(ctx context.Context, agg task.Task) (*task.TaskRecordDTO, error)
-	listFn           func(ctx context.Context, userID int64, status string) ([]task.TaskRecordDTO, error)
+	listFn           func(ctx context.Context, params task.ListTaskRecordParams) ([]task.TaskRecordDTO, int64, error)
 	getFn            func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
 	updateFn         func(ctx context.Context, userID int64, agg task.Task) (*task.TaskRecordDTO, error)
 	completeFn       func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
@@ -22,8 +23,8 @@ type mockTaskRepo struct {
 func (m *mockTaskRepo) Create(ctx context.Context, agg task.Task) (*task.TaskRecordDTO, error) {
 	return m.createFn(ctx, agg)
 }
-func (m *mockTaskRepo) List(ctx context.Context, userID int64, status string) ([]task.TaskRecordDTO, error) {
-	return m.listFn(ctx, userID, status)
+func (m *mockTaskRepo) List(ctx context.Context, params task.ListTaskRecordParams) ([]task.TaskRecordDTO, int64, error) {
+	return m.listFn(ctx, params)
 }
 func (m *mockTaskRepo) Get(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error) {
 	return m.getFn(ctx, userID, id)
@@ -77,6 +78,51 @@ func TestCreate_EmptyTitle(t *testing.T) {
 	var ve *task.ValidationError
 	if !errors.As(err, &ve) {
 		t.Errorf("expected *task.ValidationError, got %T", err)
+	}
+}
+
+func TestList_WithPagination(t *testing.T) {
+	repo := &mockTaskRepo{
+		listFn: func(_ context.Context, params task.ListTaskRecordParams) ([]task.TaskRecordDTO, int64, error) {
+			if params.UserID != 1 {
+				t.Fatalf("expected userID 1, got %d", params.UserID)
+			}
+			if params.Status != task.StatusPending {
+				t.Fatalf("expected status pending, got %q", params.Status)
+			}
+			if params.Page != 2 {
+				t.Fatalf("expected page 2, got %d", params.Page)
+			}
+			if params.Limit != 5 {
+				t.Fatalf("expected limit 5, got %d", params.Limit)
+			}
+			return []task.TaskRecordDTO{
+				{ID: 6, UserID: 1, Title: "Task 6", Status: task.StatusPending},
+				{ID: 7, UserID: 1, Title: "Task 7", Status: task.StatusPending},
+			}, 12, nil
+		},
+	}
+	svc := task.NewService(repo)
+
+	got, err := svc.List(context.Background(), 1, task.StatusPending, util.PagingRequest{Page: 2, Limit: 5})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(got.Data()) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(got.Data()))
+	}
+	info := got.PageInfo()
+	if info.TotalData != 12 {
+		t.Fatalf("expected total data 12, got %d", info.TotalData)
+	}
+	if info.TotalPage != 3 {
+		t.Fatalf("expected total page 3, got %d", info.TotalPage)
+	}
+	if info.NextPage == nil || *info.NextPage != 3 {
+		t.Fatalf("expected next page 3, got %v", info.NextPage)
+	}
+	if info.PreviousPage == nil || *info.PreviousPage != 1 {
+		t.Fatalf("expected previous page 1, got %v", info.PreviousPage)
 	}
 }
 

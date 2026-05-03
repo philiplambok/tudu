@@ -1,10 +1,10 @@
 package task
 
-import "time"
+import (
+	"time"
 
-type ValidationError struct{ msg string }
-
-func (e *ValidationError) Error() string { return e.msg }
+	"github.com/philiplambok/tudu/internal/common/util"
+)
 
 type CreateRequestDTO struct {
 	Title       string
@@ -17,6 +17,12 @@ type CreateTaskRecordDTO struct {
 	Title       string
 	Description string
 	DueDate     *time.Time
+}
+
+type ListTaskRecordParams struct {
+	UserID int64
+	Status string
+	util.PagingRequest
 }
 
 type UpdateRequestDTO struct {

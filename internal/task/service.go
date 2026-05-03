@@ -1,10 +1,14 @@
 package task
 
-import "context"
+import (
+	"context"
+
+	"github.com/philiplambok/tudu/internal/common/util"
+)
 
 type Service interface {
 	Create(ctx context.Context, userID int64, req CreateRequestDTO) (*TaskResponseDTO, error)
-	List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error)
+	List(ctx context.Context, userID int64, status string, paging util.PagingRequest) (util.PagingResponse[TaskResponseDTO], error)
 	Get(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
 	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error)
 	Complete(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
@@ -37,16 +41,20 @@ func (s *service) Create(ctx context.Context, userID int64, req CreateRequestDTO
 	return toResponseDTO(rec), nil
 }
 
-func (s *service) List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error) {
-	recs, err := s.repo.List(ctx, userID, status)
+func (s *service) List(ctx context.Context, userID int64, status string, paging util.PagingRequest) (util.PagingResponse[TaskResponseDTO], error) {
+	recs, total, err := s.repo.List(ctx, ListTaskRecordParams{
+		UserID:        userID,
+		Status:        status,
+		PagingRequest: paging,
+	})
 	if err != nil {
-		return nil, err
+		return util.PagingResponse[TaskResponseDTO]{}, err
 	}
 	out := make([]TaskResponseDTO, len(recs))
 	for i := range recs {
 		out[i] = *toResponseDTO(&recs[i])
 	}
-	return out, nil
+	return util.NewPagingResponse(out, total, paging.Page, paging.Limit), nil
 }
 
 func (s *service) Get(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error) {

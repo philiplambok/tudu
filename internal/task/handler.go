@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/philiplambok/tudu/internal"
+	"github.com/philiplambok/tudu/internal/common/util"
 	v1 "github.com/philiplambok/tudu/pkg/openapi/v1"
 )
 
@@ -55,20 +56,27 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := internal.UserIDFromContext(r.Context())
 	status := r.URL.Query().Get("status")
+	paging := util.NewPagingRequest(r)
 
-	tasks, err := h.svc.List(r.Context(), userID, status)
+	result, err := h.svc.List(r.Context(), userID, status, paging)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, "failed to list tasks")
 		return
 	}
 
-	data := make([]v1.Task, len(tasks))
-	for i := range tasks {
-		data[i] = toV1Task(&tasks[i])
+	data := result.Data()
+	tasks := make([]v1.Task, len(data))
+	for i := range data {
+		tasks[i] = toV1Task(&data[i])
 	}
 
 	render.Status(r, http.StatusOK)
-	render.JSON(w, r, v1.TaskListResponse{Data: data})
+	render.JSON(w, r, v1.TaskListResponse{
+		Data: v1.TaskListData{
+			Tasks:    tasks,
+			PageInfo: toV1PageInfo(result.PageInfo()),
+		},
+	})
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +241,17 @@ func toV1TaskActivity(a *TaskActivityResponseDTO) v1.TaskActivity {
 		OldValue:  a.OldValue,
 		NewValue:  a.NewValue,
 		CreatedAt: a.CreatedAt,
+	}
+}
+
+func toV1PageInfo(info util.PageInfo) v1.PageInfo {
+	return v1.PageInfo{
+		Count:        info.Count,
+		CurrentPage:  info.CurrentPage,
+		NextPage:     info.NextPage,
+		PreviousPage: info.PreviousPage,
+		TotalData:    info.TotalData,
+		TotalPage:    info.TotalPage,
 	}
 }
 

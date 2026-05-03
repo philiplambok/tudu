@@ -10,7 +10,7 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, task Task) (*TaskRecordDTO, error)
-	List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error)
+	List(ctx context.Context, params ListTaskRecordParams) ([]TaskRecordDTO, int64, error)
 	Get(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
 	Update(ctx context.Context, userID int64, task Task) (*TaskRecordDTO, error)
 	Complete(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error)
@@ -53,27 +53,35 @@ func (r *repository) Create(ctx context.Context, agg Task) (*TaskRecordDTO, erro
 	return out, nil
 }
 
-func (r *repository) List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error) {
-	q := r.db.WithContext(ctx).
-		Select("id, user_id, title, description, status, due_date, completed_at, created_at, updated_at").
+func (r *repository) List(ctx context.Context, params ListTaskRecordParams) ([]TaskRecordDTO, int64, error) {
+	base := r.db.WithContext(ctx).
 		Table("tasks").
-		Where("user_id = ?", userID).
-		Order("created_at DESC")
+		Where("user_id = ?", params.UserID)
 
-	if status != "" {
-		q = q.Where("status = ?", status)
+	if params.Status != "" {
+		base = base.Where("status = ?", params.Status)
+	}
+
+	var total int64
+	if err := base.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
 	var rows []datamodel.Task
-	if err := q.Scan(&rows).Error; err != nil {
-		return nil, err
+	if err := base.
+		Select("id, user_id, title, description, status, due_date, completed_at, created_at, updated_at").
+		Order("created_at DESC").
+		Limit(params.Limit).
+		Offset(params.Offset()).
+		Scan(&rows).Error; err != nil {
+		return nil, 0, err
 	}
 
 	out := make([]TaskRecordDTO, len(rows))
 	for i := range rows {
 		out[i] = *toTaskRecordDTO(&rows[i])
 	}
-	return out, nil
+	return out, total, nil
 }
 
 func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error) {
