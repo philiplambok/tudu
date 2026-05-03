@@ -47,8 +47,8 @@ tudu/
 │   │   ├── handler.go               # HTTP handlers
 │   │   └── endpoint.go              # route wiring; NewEndpoint(db, avatarProvider)
 │   └── task/
-│       ├── domain.go                # sentinel errors, ValidateCreate, ValidateUpdate, task status constants
-│       ├── dto.go                   # CreateRequestDTO, UpdateRequestDTO, CompleteResponseDTO, TaskResponseDTO, ValidationError
+│       ├── domain.go                # sentinel errors, ValidateCreate, ValidateUpdate, status constants (pending/completed)
+│       ├── dto.go                   # CreateRequestDTO, UpdateRequestDTO, TaskResponseDTO, ValidationError
 │       ├── service.go               # Service interface + impl
 │       ├── repository.go            # Repository interface + impl
 │       ├── handler.go               # HTTP handlers
@@ -86,9 +86,12 @@ Each domain (`user`, `task`) follows the same 6-file pattern from `fine`:
 ## Database Schema
 
 ### `users`
+
+Requires `CREATE EXTENSION IF NOT EXISTS citext;` — added in the first migration.
+
 ```sql
 id            BIGSERIAL PRIMARY KEY
-email         TEXT UNIQUE NOT NULL
+email         CITEXT UNIQUE NOT NULL
 password_hash TEXT NOT NULL
 avatar_url    TEXT NOT NULL
 created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -102,15 +105,12 @@ user_id         BIGINT NOT NULL REFERENCES users(id)
 title           TEXT NOT NULL
 description     TEXT
 status          TEXT NOT NULL DEFAULT 'pending'   -- 'pending' | 'completed'
-is_recurring    BOOLEAN NOT NULL DEFAULT false
 due_date        DATE                              -- optional display field
-parent_task_id  BIGINT REFERENCES tasks(id)       -- set on auto-spawned recurring children
 completed_at    TIMESTAMPTZ
 created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-`parent_task_id` creates a visible chain of recurring task occurrences. Tasks with `is_recurring = true` cannot be deleted — enforced in `task.Service.Delete`.
 
 ---
 
@@ -129,12 +129,12 @@ GET /v1/users/me          Current user profile (id, email, avatar_url)
 
 ### Tasks (JWT required — all scoped to the authenticated user)
 ```
-POST   /v1/tasks                    Create task (title, description, is_recurring, due_date)
+POST   /v1/tasks                    Create task (title, description, due_date)
 GET    /v1/tasks                    List tasks (filter: ?status=pending|completed)
 GET    /v1/tasks/{id}               Get single task
 PATCH  /v1/tasks/{id}               Update title, description, due_date
-POST   /v1/tasks/{id}/complete      Mark complete; auto-spawns next occurrence if recurring
-DELETE /v1/tasks/{id}               Delete (blocked if is_recurring=true)
+POST   /v1/tasks/{id}/complete      Mark task as completed
+DELETE /v1/tasks/{id}               Delete task
 ```
 
 JWT middleware extracts `user_id` from the token and injects it into `context.Context`. Task handlers read it from context — never from the request body.
@@ -152,12 +152,11 @@ JWT middleware extracts `user_id` from the token and injects it into `context.Co
 
 ## Business Logic
 
-### Recurring task auto-spawn (`task.Service.Complete`)
+### Complete task (`task.Service.Complete`)
 
 1. Load task; verify `user_id` matches the caller (return `404` if not found or not owned).
 2. Set `status = completed`, `completed_at = NOW()`.
-3. If `is_recurring = true`: create a new task with the same `title`, `description`, `is_recurring = true`, `status = pending`, `parent_task_id = <completed task's id>`.
-4. Return `CompleteResponseDTO` containing the completed task and (if spawned) the new pending task.
+3. Return the completed `TaskResponseDTO`.
 
 ### Avatar adapter (`pkg/avatar`)
 
@@ -183,7 +182,6 @@ Mirrors `fine`:
 
 - `ValidationError` (pointer type) — `422 Unprocessable Entity`
 - `ErrNotFound` sentinel — `404 Not Found` (also returned when a task exists but belongs to another user — avoids leaking task existence)
-- `ErrConflict` sentinel — `409 Conflict` (delete recurring task)
 - Unexpected errors — `500 Internal Server Error` with a generic message (no internals leaked)
 
 Response shape: `{"error": "<message>"}` — matches `fine`'s `ErrorResponse` schema.
