@@ -23,5 +23,6 @@ func (e *Endpoint) Routes() *chi.Mux {
 	r.Patch("/{id}", e.handler.Update)
 	r.Post("/{id}/complete", e.handler.Complete)
 	r.Delete("/{id}", e.handler.Delete)
+	r.Get("/{id}/activities", e.handler.ListActivities)
 	return r
 }

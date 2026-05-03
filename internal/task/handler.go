@@ -178,6 +178,34 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
+	userID := internal.UserIDFromContext(r.Context())
+
+	taskID, err := parseID(r)
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid task id")
+		return
+	}
+
+	activities, err := h.svc.ListActivities(r.Context(), userID, taskID)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			writeError(w, r, http.StatusNotFound, err.Error())
+			return
+		}
+		writeError(w, r, http.StatusInternalServerError, "failed to list task activities")
+		return
+	}
+
+	data := make([]v1.TaskActivity, len(activities))
+	for i := range activities {
+		data[i] = toV1TaskActivity(&activities[i])
+	}
+
+	render.Status(r, http.StatusOK)
+	render.JSON(w, r, v1.TaskActivityListResponse{Data: data})
+}
+
 func toV1Task(t *TaskResponseDTO) v1.Task {
 	task := v1.Task{
 		Id:          t.ID,
@@ -193,6 +221,19 @@ func toV1Task(t *TaskResponseDTO) v1.Task {
 		task.Description = &t.Description
 	}
 	return task
+}
+
+func toV1TaskActivity(a *TaskActivityResponseDTO) v1.TaskActivity {
+	return v1.TaskActivity{
+		Id:        a.ID,
+		TaskId:    a.TaskID,
+		UserId:    a.UserID,
+		Action:    v1.TaskActivityAction(a.Action),
+		FieldName: a.FieldName,
+		OldValue:  a.OldValue,
+		NewValue:  a.NewValue,
+		CreatedAt: a.CreatedAt,
+	}
 }
 
 func parseID(r *http.Request) (int64, error) {
