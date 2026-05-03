@@ -2,6 +2,8 @@ package task
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/philiplambok/tudu/internal/common/datamodel"
 	"gorm.io/gorm"
@@ -26,17 +28,28 @@ func NewRepository(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskRecordDTO, error) {
-	var row datamodel.Task
-	res := r.db.WithContext(ctx).Raw(`
-		INSERT INTO tasks (user_id, title, description, status, due_date, created_at, updated_at)
-		VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())
-		RETURNING id, user_id, title, description, status, due_date, completed_at, created_at, updated_at`,
-		rec.UserID, rec.Title, rec.Description, rec.DueDate,
-	).Scan(&row)
-	if res.Error != nil {
-		return nil, res.Error
+	var out *TaskRecordDTO
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row datamodel.Task
+		res := tx.Raw(`
+			INSERT INTO tasks (user_id, title, description, status, due_date, created_at, updated_at)
+			VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())
+			RETURNING id, user_id, title, description, status, due_date, completed_at, created_at, updated_at`,
+			rec.UserID, rec.Title, rec.Description, rec.DueDate,
+		).Scan(&row)
+		if res.Error != nil {
+			return res.Error
+		}
+		if err := insertTaskActivity(ctx, tx, row.ID, row.UserID, ActivityActionCreated, nil, nil, nil); err != nil {
+			return err
+		}
+		out = toTaskRecordDTO(&row)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return toTaskRecordDTO(&row), nil
+	return out, nil
 }
 
 func (r *repository) List(ctx context.Context, userID int64, status string) ([]TaskRecordDTO, error) {
@@ -78,28 +91,78 @@ func (r *repository) Get(ctx context.Context, userID int64, id int64) (*TaskReco
 }
 
 func (r *repository) Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskRecordDTO, error) {
-	updates := map[string]any{"updated_at": gorm.Expr("NOW()")}
-	if req.Title != nil {
-		updates["title"] = *req.Title
-	}
-	if req.Description != nil {
-		updates["description"] = *req.Description
-	}
-	if req.DueDate != nil {
-		updates["due_date"] = *req.DueDate
-	}
+	var out *TaskRecordDTO
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var before datamodel.Task
+		getBefore := tx.Raw(`
+			SELECT id, user_id, title, description, status, due_date, completed_at, created_at, updated_at
+			FROM tasks WHERE id = ? AND user_id = ?`, id, userID,
+		).Scan(&before)
+		if getBefore.Error != nil {
+			return getBefore.Error
+		}
+		if getBefore.RowsAffected == 0 {
+			return ErrNotFound
+		}
 
-	res := r.db.WithContext(ctx).
-		Table("tasks").
-		Where("id = ? AND user_id = ?", id, userID).
-		Updates(updates)
-	if res.Error != nil {
-		return nil, res.Error
+		updates := map[string]any{"updated_at": gorm.Expr("NOW()")}
+		if req.Title != nil {
+			updates["title"] = *req.Title
+		}
+		if req.Description != nil {
+			updates["description"] = *req.Description
+		}
+		if req.DueDate != nil {
+			updates["due_date"] = *req.DueDate
+		}
+
+		res := tx.Table("tasks").Where("id = ? AND user_id = ?", id, userID).Updates(updates)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return ErrNotFound
+		}
+
+		var after datamodel.Task
+		getAfter := tx.Raw(`
+			SELECT id, user_id, title, description, status, due_date, completed_at, created_at, updated_at
+			FROM tasks WHERE id = ? AND user_id = ?`, id, userID,
+		).Scan(&after)
+		if getAfter.Error != nil {
+			return getAfter.Error
+		}
+		if getAfter.RowsAffected == 0 {
+			return ErrNotFound
+		}
+
+		changes := []struct {
+			field string
+			old   *string
+			new   *string
+		}{
+			{field: "title", old: textValue(before.Title), new: textValue(after.Title)},
+			{field: "description", old: textValue(before.Description), new: textValue(after.Description)},
+			{field: "due_date", old: timeValue(before.DueDate), new: timeValue(after.DueDate)},
+		}
+
+		for _, change := range changes {
+			if valuesEqual(change.old, change.new) {
+				continue
+			}
+			fieldName := change.field
+			if err := insertTaskActivity(ctx, tx, after.ID, after.UserID, ActivityActionUpdated, &fieldName, change.old, change.new); err != nil {
+				return fmt.Errorf("insert task activity: %w", err)
+			}
+		}
+
+		out = toTaskRecordDTO(&after)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	if res.RowsAffected == 0 {
-		return nil, ErrNotFound
-	}
-	return r.Get(ctx, userID, id)
+	return out, nil
 }
 
 func (r *repository) Complete(ctx context.Context, userID int64, id int64) (*TaskRecordDTO, error) {
@@ -163,4 +226,37 @@ func toTaskActivityRecordDTO(m *datamodel.TaskActivity) *TaskActivityRecordDTO {
 		NewValue:  m.NewValue,
 		CreatedAt: m.CreatedAt,
 	}
+}
+
+func insertTaskActivity(ctx context.Context, db *gorm.DB, taskID int64, userID int64, action string, fieldName *string, oldValue *string, newValue *string) error {
+	return db.WithContext(ctx).Exec(`
+		INSERT INTO task_activities (task_id, user_id, action, field_name, old_value, new_value, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+		taskID, userID, action, fieldName, oldValue, newValue,
+	).Error
+}
+
+func stringPtr(v string) *string {
+	return &v
+}
+
+func timeValue(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+	return stringPtr(t.UTC().Format(time.RFC3339))
+}
+
+func textValue(v string) *string {
+	return stringPtr(v)
+}
+
+func valuesEqual(a *string, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
