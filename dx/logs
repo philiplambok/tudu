@@ -1,0 +1,4 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+docker compose -f "$COMPOSE_FILE" logs -f --tail=200 "$@"

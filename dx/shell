@@ -1,0 +1,5 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+check_container_running
+docker compose -f "$COMPOSE_FILE" exec app bash

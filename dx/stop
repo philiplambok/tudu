@@ -1,0 +1,19 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+
+REMOVE=false
+for arg in "$@"; do
+    case $arg in
+        --remove) REMOVE=true ;;
+    esac
+done
+
+if [ "$REMOVE" = true ]; then
+    echo "🧹 Stopping and removing containers + volumes..."
+    docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+else
+    echo "🛑 Stopping containers..."
+    docker compose -f "$COMPOSE_FILE" stop
+fi
+echo "✅ Stopped."

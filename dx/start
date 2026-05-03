@@ -1,0 +1,15 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+check_image_exists
+
+echo "🚀 Starting containers..."
+docker compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null || true
+docker compose -f "$COMPOSE_FILE" up -d
+
+echo ""
+docker compose -f "$COMPOSE_FILE" ps
+echo ""
+echo "✅ Up. Next:"
+echo "   ./dx/db migrate    Apply migrations"
+echo "   ./dx/dev           Start HTTP server with live reload"

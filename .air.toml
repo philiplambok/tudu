@@ -1,0 +1,23 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/tudu ./main.go"
+  bin = "./tmp/tudu"
+  full_bin = "./tmp/tudu serve"
+  include_ext = ["go", "yml", "yaml"]
+  exclude_dir = ["tmp", "vendor", "db/migrations", "dx", ".git"]
+  delay = 500
+  stop_on_error = true
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

@@ -1,0 +1,27 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+
+SUBCOMMAND="${1:-}"
+shift || true
+
+if [ -z "$SUBCOMMAND" ] || [ "$SUBCOMMAND" = "-h" ] || [ "$SUBCOMMAND" = "--help" ]; then
+    echo "Usage: ./dx/generate <command>"
+    echo "Commands:"
+    echo "  openapi     Generate Go types from api/openapi.yml"
+    exit 0
+fi
+
+check_docker
+check_container_running
+
+case "$SUBCOMMAND" in
+    openapi)
+        echo "📝 Generating OpenAPI code from api/openapi.yml..."
+        docker compose -f "$COMPOSE_FILE" exec app \
+            go tool oapi-codegen -config ./oapi_codegen.yml ./api/openapi.yml
+        echo "✅ Generated: pkg/openapi/v1/openapi.gen.go"
+        ;;
+    *)
+        echo "❌ Unknown command: $SUBCOMMAND"
+        exit 1 ;;
+esac

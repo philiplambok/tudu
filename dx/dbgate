@@ -1,0 +1,29 @@
+#!/bin/bash
+set -euo pipefail
+source "$(dirname "$0")/_common"
+
+SERVICE="dbgate"
+URL="http://localhost:3011"
+
+check_docker
+
+case "${1:-}" in
+    start)
+        echo "🚀 Starting DBGate..."
+        docker compose -f "$COMPOSE_FILE" --profile dbgate up -d "$SERVICE"
+        echo "✅ DBGate starting at: ${URL}"
+        ;;
+    stop)
+        docker compose -f "$COMPOSE_FILE" --profile dbgate stop "$SERVICE"
+        docker compose -f "$COMPOSE_FILE" --profile dbgate rm -f "$SERVICE"
+        echo "✅ DBGate stopped"
+        ;;
+    status)
+        docker compose -f "$COMPOSE_FILE" --profile dbgate ps "$SERVICE" ;;
+    open)
+        open "$URL" 2>/dev/null || xdg-open "$URL" 2>/dev/null || echo "Open: $URL" ;;
+    logs)
+        docker compose -f "$COMPOSE_FILE" --profile dbgate logs -f "$SERVICE" ;;
+    *)
+        echo "Usage: ./dx/dbgate start|stop|status|open|logs"; exit 1 ;;
+esac

@@ -1,0 +1,9 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+check_container_running
+
+if [ $# -eq 0 ]; then
+    set -- "./..."
+fi
+docker compose -f "$COMPOSE_FILE" exec app go test "$@"

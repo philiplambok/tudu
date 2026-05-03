@@ -1,0 +1,14 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+
+echo "⚠️  This will remove containers, volumes, and the '$IMAGE_NAME' image."
+read -r -p "Continue? [y/N] " ans
+case "$ans" in
+    y|Y|yes|YES) ;;
+    *) echo "Aborted."; exit 0 ;;
+esac
+
+docker compose -f "$COMPOSE_FILE" --profile dbgate down -v --remove-orphans 2>/dev/null || true
+docker image rm "$IMAGE_NAME" 2>/dev/null || true
+echo "✅ Cleaned. Run './dx/build' to rebuild."

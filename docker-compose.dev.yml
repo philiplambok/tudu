@@ -1,0 +1,79 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: dx/Dockerfile
+    image: tudu:dev
+    container_name: tudu-app
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - go_mod_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    environment:
+      - ENV_ENV=local
+      - GO111MODULE=on
+      - CGO_ENABLED=1
+      - ENV_DATABASE_SOURCE=postgresql://postgres:postgres@postgres:5432/tudu?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tudu-network
+    command: ["sleep", "infinity"]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tudu-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tudu
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tudu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - tudu-network
+
+  dbgate:
+    image: dbgate/dbgate:latest
+    container_name: tudu-dbgate
+    profiles: ["dbgate"]
+    restart: unless-stopped
+    ports:
+      - "3011:3000"
+    environment:
+      CONNECTIONS: postgres
+      LABEL_postgres: PostgreSQL (tudu dev)
+      SERVER_postgres: postgres
+      PORT_postgres: 5432
+      USER_postgres: postgres
+      PASSWORD_postgres: postgres
+      DATABASE_postgres: tudu
+      ENGINE_postgres: postgres@dbgate-plugin-postgres
+    volumes:
+      - dbgate_dev_data:/root/.dbgate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tudu-network
+
+volumes:
+  postgres_dev_data:
+  go_mod_cache:
+  go_build_cache:
+  dbgate_dev_data:
+
+networks:
+  tudu-network:
+    driver: bridge

@@ -1,0 +1,12 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+check_docker
+check_container_running
+
+if [ "$1" = "--no-reload" ]; then
+    echo "🚀 Starting HTTP server (no live reload) on http://localhost:8080"
+    docker compose -f "$COMPOSE_FILE" exec app go run main.go serve
+else
+    echo "🚀 Starting HTTP server with live reload on http://localhost:8080"
+    docker compose -f "$COMPOSE_FILE" exec app air -c .air.toml
+fi

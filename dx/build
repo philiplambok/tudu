@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+source "$(dirname "$0")/_common"
+check_docker
+
+NO_CACHE=""
+for arg in "$@"; do
+    case $arg in
+        --no-cache) NO_CACHE="--no-cache" ;;
+        --help|-h)
+            echo "Usage: ./dx/build [--no-cache]"
+            exit 0 ;;
+    esac
+done
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+echo "🐳 Building $IMAGE_NAME ..."
+docker build $NO_CACHE -f dx/Dockerfile -t "$IMAGE_NAME" .
+echo "✅ Image built: $IMAGE_NAME"
+echo "🚀 Next: ./dx/start"
