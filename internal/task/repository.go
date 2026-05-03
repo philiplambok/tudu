@@ -7,7 +7,7 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, userID int64, req CreateRequestDTO) (*TaskResponseDTO, error)
+	Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskResponseDTO, error)
 	List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error)
 	Get(ctx context.Context, userID int64, id int64) (*TaskResponseDTO, error)
 	Update(ctx context.Context, userID int64, id int64, req UpdateRequestDTO) (*TaskResponseDTO, error)
@@ -23,13 +23,13 @@ func NewRepository(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, userID int64, req CreateRequestDTO) (*TaskResponseDTO, error) {
+func (r *repository) Create(ctx context.Context, rec CreateTaskRecordDTO) (*TaskResponseDTO, error) {
 	var row TaskResponseDTO
 	res := r.db.WithContext(ctx).Raw(`
 		INSERT INTO tasks (user_id, title, description, status, due_date, created_at, updated_at)
 		VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())
 		RETURNING id, user_id, title, description, status, due_date, completed_at, created_at, updated_at`,
-		userID, req.Title, req.Description, req.DueDate,
+		rec.UserID, rec.Title, rec.Description, rec.DueDate,
 	).Scan(&row)
 	if res.Error != nil {
 		return nil, res.Error

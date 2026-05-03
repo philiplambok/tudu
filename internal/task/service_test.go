@@ -10,7 +10,7 @@ import (
 )
 
 type mockTaskRepo struct {
-	createFn   func(ctx context.Context, userID int64, req task.CreateRequestDTO) (*task.TaskResponseDTO, error)
+	createFn   func(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskResponseDTO, error)
 	listFn     func(ctx context.Context, userID int64, status string) ([]task.TaskResponseDTO, error)
 	getFn      func(ctx context.Context, userID int64, id int64) (*task.TaskResponseDTO, error)
 	updateFn   func(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskResponseDTO, error)
@@ -18,8 +18,8 @@ type mockTaskRepo struct {
 	deleteFn   func(ctx context.Context, userID int64, id int64) error
 }
 
-func (m *mockTaskRepo) Create(ctx context.Context, userID int64, req task.CreateRequestDTO) (*task.TaskResponseDTO, error) {
-	return m.createFn(ctx, userID, req)
+func (m *mockTaskRepo) Create(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskResponseDTO, error) {
+	return m.createFn(ctx, rec)
 }
 func (m *mockTaskRepo) List(ctx context.Context, userID int64, status string) ([]task.TaskResponseDTO, error) {
 	return m.listFn(ctx, userID, status)
@@ -39,11 +39,11 @@ func (m *mockTaskRepo) Delete(ctx context.Context, userID int64, id int64) error
 
 func TestCreate_Success(t *testing.T) {
 	repo := &mockTaskRepo{
-		createFn: func(_ context.Context, userID int64, req task.CreateRequestDTO) (*task.TaskResponseDTO, error) {
+		createFn: func(_ context.Context, rec task.CreateTaskRecordDTO) (*task.TaskResponseDTO, error) {
 			return &task.TaskResponseDTO{
 				ID:     1,
-				UserID: userID,
-				Title:  req.Title,
+				UserID: rec.UserID,
+				Title:  rec.Title,
 				Status: task.StatusPending,
 			}, nil
 		},

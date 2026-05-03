@@ -12,6 +12,13 @@ type CreateRequestDTO struct {
 	DueDate     *time.Time
 }
 
+type CreateTaskRecordDTO struct {
+	UserID      int64
+	Title       string
+	Description string
+	DueDate     *time.Time
+}
+
 type UpdateRequestDTO struct {
 	Title       *string
 	Description *string

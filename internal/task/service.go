@@ -23,7 +23,12 @@ func (s *service) Create(ctx context.Context, userID int64, req CreateRequestDTO
 	if err := ValidateCreate(req); err != nil {
 		return nil, err
 	}
-	return s.repo.Create(ctx, userID, req)
+	return s.repo.Create(ctx, CreateTaskRecordDTO{
+		UserID:      userID,
+		Title:       req.Title,
+		Description: req.Description,
+		DueDate:     req.DueDate,
+	})
 }
 
 func (s *service) List(ctx context.Context, userID int64, status string) ([]TaskResponseDTO, error) {
