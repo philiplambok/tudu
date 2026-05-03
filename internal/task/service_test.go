@@ -10,12 +10,12 @@ import (
 )
 
 type mockTaskRepo struct {
-	createFn   func(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskRecordDTO, error)
-	listFn     func(ctx context.Context, userID int64, status string) ([]task.TaskRecordDTO, error)
-	getFn      func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
-	updateFn   func(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskRecordDTO, error)
-	completeFn func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
-	deleteFn   func(ctx context.Context, userID int64, id int64) error
+	createFn         func(ctx context.Context, rec task.CreateTaskRecordDTO) (*task.TaskRecordDTO, error)
+	listFn           func(ctx context.Context, userID int64, status string) ([]task.TaskRecordDTO, error)
+	getFn            func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
+	updateFn         func(ctx context.Context, userID int64, id int64, req task.UpdateRequestDTO) (*task.TaskRecordDTO, error)
+	completeFn       func(ctx context.Context, userID int64, id int64) (*task.TaskRecordDTO, error)
+	deleteFn         func(ctx context.Context, userID int64, id int64) error
 	listActivitiesFn func(ctx context.Context, userID int64, taskID int64) ([]task.TaskActivityRecordDTO, error)
 }
 

@@ -25,7 +25,6 @@ type UpdateRequestDTO struct {
 	DueDate     *time.Time
 }
 
-
 type TaskRecordDTO struct {
 	ID          int64
 	UserID      int64

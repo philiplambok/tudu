@@ -134,6 +134,10 @@ func (r *repository) Delete(ctx context.Context, userID int64, id int64) error {
 	return nil
 }
 
+func (r *repository) ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityRecordDTO, error) {
+	panic("not implemented")
+}
+
 func toTaskRecordDTO(m *datamodel.Task) *TaskRecordDTO {
 	return &TaskRecordDTO{
 		ID:          m.ID,
@@ -146,10 +150,6 @@ func toTaskRecordDTO(m *datamodel.Task) *TaskRecordDTO {
 		CreatedAt:   m.CreatedAt,
 		UpdatedAt:   m.UpdatedAt,
 	}
-}
-
-func (r *repository) ListActivities(ctx context.Context, userID int64, taskID int64) ([]TaskActivityRecordDTO, error) {
-	panic("not implemented")
 }
 
 func toTaskActivityRecordDTO(m *datamodel.TaskActivity) *TaskActivityRecordDTO {
