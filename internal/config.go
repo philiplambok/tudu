@@ -3,11 +3,12 @@ package internal
 import "log/slog"
 
 type Config struct {
-	Env        string           `mapstructure:"env"`
-	Log        LogConfig        `mapstructure:"log"`
-	HTTPServer HTTPServerConfig `mapstructure:"http_server"`
-	Database   DatabaseConfig   `mapstructure:"database"`
-	JWT        JWTConfig        `mapstructure:"jwt"`
+	Env          string                `mapstructure:"env"`
+	Log          LogConfig             `mapstructure:"log"`
+	HTTPServer   HTTPServerConfig      `mapstructure:"http_server"`
+	Database     DatabaseConfig        `mapstructure:"database"`
+	JWT          JWTConfig             `mapstructure:"jwt"`
+	Notification NotificationConfig    `mapstructure:"notification"`
 }
 
 type LogConfig struct {
@@ -37,4 +38,10 @@ type DatabaseConfig struct {
 
 type JWTConfig struct {
 	Secret string `mapstructure:"secret"`
+}
+
+type NotificationConfig struct {
+	BaseURL      string `mapstructure:"base_url"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
 }
