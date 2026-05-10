@@ -11,6 +11,7 @@ services:
       - .:/app
       - go_mod_cache:/go/pkg/mod
       - go_build_cache:/root/.cache/go-build
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - ENV_ENV=local
       - GO111MODULE=on
