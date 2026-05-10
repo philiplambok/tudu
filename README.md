@@ -41,6 +41,8 @@ cp config.example.yml config.yml
 | PostgreSQL | localhost:5434 |
 | DBGate (optional) | http://localhost:3011 |
 
+> Ports shift by `PORT_OFFSET` when running multiple worktrees in parallel. Run `./dx/workspace show` to confirm active assignments.
+
 ## Configuration
 
 Config is loaded from `config.yml`. All keys can be overridden via environment variables prefixed with `ENV_` (e.g. `ENV_DATABASE_SOURCE`).
@@ -102,6 +104,20 @@ Development and runtime are containerized, so Docker is the only local applicati
 ./dx/dbgate start          # optional DB web GUI
 ./dx/stop --remove         # stop + drop volumes
 ```
+
+### Multiple Worktrees
+
+Each git worktree can run its own isolated Docker stack with no port conflicts:
+
+```bash
+# In a second worktree — pick a unique port offset (1, 2, …)
+./dx/workspace init feature-branch 1
+./dx/workspace show    # APP_PORT=8081, POSTGRES_PORT=5435
+./dx/start
+./dx/dev               # → http://localhost:8081
+```
+
+See [dx/README.md](dx/README.md) for full multi-worktree documentation.
 
 ## Project Structure
 
