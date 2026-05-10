@@ -54,9 +54,41 @@ Docker-based scripts for local development. All commands run inside containers �
 
 ## Ports
 
-| Service | Host | Container |
+Ports are auto-assigned per worktree using a deterministic offset derived from the
+workspace directory name. The defaults below apply when running a single worktree.
+
+| Service | Default host port | Container port |
 |---|---|---|
-| HTTP server | http://localhost:8080 | 8080 |
-| PostgreSQL | localhost:5434 | 5432 |
-| DBGate | http://localhost:3011 | 3000 |
-| Swagger UI | http://localhost:8080/swagger/ | — |
+| HTTP server | 8080 + offset | 8080 |
+| PostgreSQL | 5434 + offset | 5432 |
+| DBGate | 3011 + offset | 3000 |
+| Swagger UI | same as HTTP | — |
+
+Run `./dx/status` to see the actual ports for the current workspace.
+
+## Parallel Worktrees
+
+Each git worktree runs its own fully isolated Docker stack — separate containers,
+volumes, and ports. No configuration required.
+
+**How it works:** `dx/_common` reads the workspace directory name (e.g. `khartoum`),
+hashes it to a stable offset (0–49), and uses that to:
+
+- Set the Docker Compose project name to `tudu-<workspace>` — this namespaces
+  containers (`tudu-khartoum-app-1`), volumes, and networks automatically.
+- Derive unique host ports for the app, Postgres, and DBGate services.
+
+**Running two worktrees simultaneously:**
+
+```bash
+# Terminal 1 — worktree "khartoum"
+cd ~/conductor/workspaces/tudu/khartoum
+./dx/start      # prints: ✅ [khartoum] Up. App: http://localhost:808X
+
+# Terminal 2 — worktree "london"
+cd ~/conductor/workspaces/tudu/london
+./dx/start      # prints: ✅ [london] Up. App: http://localhost:808Y
+```
+
+Each worktree has its own Postgres data volume — migrations run independently.
+The `tudu:dev` Docker image is shared (built once, used by all worktrees).
