@@ -4,6 +4,17 @@
 COMPOSE_FILE="docker-compose.dev.yml"
 IMAGE_NAME="tudu:dev"
 
+WORKSPACE=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
+_HASH=$(echo -n "$WORKSPACE" | cksum | awk '{print $1}')
+WORKSPACE_OFFSET=$((_HASH % 50))
+
+COMPOSE_PROJECT="tudu-${WORKSPACE}"
+COMPOSE_ARGS="-f ${COMPOSE_FILE} -p ${COMPOSE_PROJECT}"
+
+export APP_PORT=$((8080 + WORKSPACE_OFFSET))
+export PG_PORT=$((5434 + WORKSPACE_OFFSET))
+export DBGATE_PORT=$((3011 + WORKSPACE_OFFSET))
+
 check_docker() {
     if ! command -v docker &> /dev/null; then
         echo "❌ Docker is not installed or not in PATH"
@@ -28,7 +39,7 @@ check_image_exists() {
 }
 
 check_container_running() {
-    if ! docker compose -f "$COMPOSE_FILE" ps --services --filter "status=running" | grep -q "^app$"; then
+    if ! docker compose $COMPOSE_ARGS ps --services --filter "status=running" | grep -q "^app$"; then
         echo "❌ Development container is not running"
         echo "💡 Start it first: ./dx/start"
         exit 1
