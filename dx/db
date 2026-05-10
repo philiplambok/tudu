@@ -29,18 +29,18 @@ case "$SUBCOMMAND" in
     migration)
         NAME="${1:-}"
         if [ -z "$NAME" ]; then echo "❌ migration name required"; exit 1; fi
-        docker compose -f "$COMPOSE_FILE" exec app goose -dir="$DIR" create "$NAME" sql
+        docker compose $COMPOSE_ARGS exec app goose -dir="$DIR" create "$NAME" sql
         ;;
     migrate)
         echo "🔄 Applying migrations..."
-        docker compose -f "$COMPOSE_FILE" exec app go run main.go migrate
+        docker compose $COMPOSE_ARGS exec app go run main.go migrate
         ;;
     migrate:rollback)
         echo "⏪ Rolling back last migration..."
-        docker compose -f "$COMPOSE_FILE" exec app go run main.go migrate --rollback
+        docker compose $COMPOSE_ARGS exec app go run main.go migrate --rollback
         ;;
     status)
-        docker compose -f "$COMPOSE_FILE" exec app \
+        docker compose $COMPOSE_ARGS exec app \
             sh -c "goose -dir=$DIR postgres \"\$ENV_DATABASE_SOURCE\" status"
         ;;
     *)

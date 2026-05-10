@@ -7,4 +7,4 @@ if [ $# -eq 0 ]; then
     echo "Usage: ./dx/exec <command> [args...]"
     exit 1
 fi
-docker compose -f "$COMPOSE_FILE" exec app "$@"
+docker compose $COMPOSE_ARGS exec app "$@"

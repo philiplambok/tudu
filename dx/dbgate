@@ -10,20 +10,20 @@ check_docker
 case "${1:-}" in
     start)
         echo "🚀 Starting DBGate..."
-        docker compose -f "$COMPOSE_FILE" --profile dbgate up -d "$SERVICE"
+        docker compose $COMPOSE_ARGS --profile dbgate up -d "$SERVICE"
         echo "✅ DBGate starting at: ${URL}"
         ;;
     stop)
-        docker compose -f "$COMPOSE_FILE" --profile dbgate stop "$SERVICE"
-        docker compose -f "$COMPOSE_FILE" --profile dbgate rm -f "$SERVICE"
+        docker compose $COMPOSE_ARGS --profile dbgate stop "$SERVICE"
+        docker compose $COMPOSE_ARGS --profile dbgate rm -f "$SERVICE"
         echo "✅ DBGate stopped"
         ;;
     status)
-        docker compose -f "$COMPOSE_FILE" --profile dbgate ps "$SERVICE" ;;
+        docker compose $COMPOSE_ARGS --profile dbgate ps "$SERVICE" ;;
     open)
         open "$URL" 2>/dev/null || xdg-open "$URL" 2>/dev/null || echo "Open: $URL" ;;
     logs)
-        docker compose -f "$COMPOSE_FILE" --profile dbgate logs -f "$SERVICE" ;;
+        docker compose $COMPOSE_ARGS --profile dbgate logs -f "$SERVICE" ;;
     *)
         echo "Usage: ./dx/dbgate start|stop|status|open|logs"; exit 1 ;;
 esac

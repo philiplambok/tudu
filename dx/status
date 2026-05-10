@@ -1,4 +1,5 @@
 #!/bin/bash
 source "$(dirname "$0")/_common"
 check_docker
-docker compose -f "$COMPOSE_FILE" ps
+echo "📦 Workspace: ${WORKSPACE}  (app: ${APP_PORT} · postgres: ${PG_PORT})"
+docker compose $COMPOSE_ARGS ps

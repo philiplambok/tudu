@@ -11,9 +11,9 @@ done
 
 if [ "$REMOVE" = true ]; then
     echo "🧹 Stopping and removing containers + volumes..."
-    docker compose -f "$COMPOSE_FILE" down -v --remove-orphans
+    docker compose $COMPOSE_ARGS down -v --remove-orphans
 else
     echo "🛑 Stopping containers..."
-    docker compose -f "$COMPOSE_FILE" stop
+    docker compose $COMPOSE_ARGS stop
 fi
 echo "✅ Stopped."

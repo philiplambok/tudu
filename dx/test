@@ -6,4 +6,4 @@ check_container_running
 if [ $# -eq 0 ]; then
     set -- "./..."
 fi
-docker compose -f "$COMPOSE_FILE" exec app go test "$@"
+docker compose $COMPOSE_ARGS exec app go test "$@"
