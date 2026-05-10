@@ -1,0 +1,56 @@
+#!/bin/bash
+source "$(dirname "$0")/_common"
+
+usage() {
+    cat <<EOF
+Usage: ./dx/workspace <command>
+
+Commands:
+  init [name] [port-offset]   Create dx/workspace.env for this worktree
+  show                        Print active workspace name and port assignments
+EOF
+}
+
+case "${1:-}" in
+    init)
+        NAME="${2:-}"
+        OFFSET="${3:-0}"
+
+        if [ -z "$NAME" ]; then
+            _branch="$(git -C "$PROJECT_ROOT" branch --show-current 2>/dev/null || echo 'default')"
+            NAME="$(echo "$_branch" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9_' '-' | sed 's/-*$//')"
+            NAME="${NAME:-default}"
+        fi
+
+        cat > "$SCRIPT_DIR/workspace.env" <<ENVEOF
+# dx/workspace.env — per-worktree Docker isolation config. Gitignored.
+# Edit manually or regenerate with: ./dx/workspace init [name] [offset]
+WORKSPACE_NAME=${NAME}
+PORT_OFFSET=${OFFSET}
+ENVEOF
+        echo "✅ Created dx/workspace.env"
+        echo ""
+        echo "   Workspace:     tudu-${NAME}"
+        echo "   APP_PORT:      $((8080 + OFFSET))  → http://localhost:$((8080 + OFFSET))"
+        echo "   POSTGRES_PORT: $((5434 + OFFSET))  → localhost:$((5434 + OFFSET))"
+        echo "   DBGATE_PORT:   $((3011 + OFFSET))  → http://localhost:$((3011 + OFFSET))"
+        ;;
+
+    show)
+        echo "Workspace: ${COMPOSE_PROJECT_NAME}"
+        echo "  APP_PORT:      ${APP_PORT}  → http://localhost:${APP_PORT}"
+        echo "  POSTGRES_PORT: ${POSTGRES_PORT}  → localhost:${POSTGRES_PORT}"
+        echo "  DBGATE_PORT:   ${DBGATE_PORT}  → http://localhost:${DBGATE_PORT}"
+        if [ -f "$WORKSPACE_ENV" ]; then
+            echo "  Config:        dx/workspace.env (loaded)"
+        else
+            echo "  Config:        dx/workspace.env (absent — derived from git branch)"
+        fi
+        ;;
+
+    ""|"-h"|"--help")
+        usage ;;
+
+    *)
+        echo "❌ Unknown command: ${1}"; usage; exit 1 ;;
+esac
