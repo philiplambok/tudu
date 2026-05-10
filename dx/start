@@ -3,13 +3,16 @@ source "$(dirname "$0")/_common"
 check_docker
 check_image_exists
 
-echo "🚀 Starting containers..."
+echo "🚀 Starting containers (workspace: ${COMPOSE_PROJECT_NAME})..."
 docker compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null || true
 docker compose -f "$COMPOSE_FILE" up -d
 
 echo ""
 docker compose -f "$COMPOSE_FILE" ps
 echo ""
-echo "✅ Up. Next:"
+echo "✅ Up (workspace: ${COMPOSE_PROJECT_NAME})"
+echo "   HTTP API:      http://localhost:${APP_PORT}"
+echo "   PostgreSQL:    localhost:${POSTGRES_PORT}"
+echo ""
 echo "   ./dx/db migrate    Apply migrations"
 echo "   ./dx/dev           Start HTTP server with live reload"

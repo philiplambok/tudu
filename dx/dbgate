@@ -3,7 +3,7 @@ set -euo pipefail
 source "$(dirname "$0")/_common"
 
 SERVICE="dbgate"
-URL="http://localhost:3011"
+URL="http://localhost:${DBGATE_PORT}"
 
 check_docker
 
